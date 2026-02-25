@@ -129,8 +129,9 @@
                 </div>
                 <textarea
                   v-model="refinementPrompt"
+                  @paste="handleRefinementPaste"
                   class="w-full flex-1 bg-transparent text-xs text-slate-200 outline-none resize-none placeholder-slate-600 custom-textarea pr-10"
-                  placeholder="How can I improve this architecture?..."
+                  placeholder="How can I improve this architecture? (Ctrl+V to paste image)..."
                 ></textarea>
                 <button @click="triggerRefinementUpload" class="absolute bottom-4 right-4 p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 border border-slate-700 transition-colors shadow-black/50 shadow-md" title="Attach Visual Context">
                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -194,6 +195,11 @@
         
         <div v-if="generatedFiles.length > 0" class="flex gap-2">
           
+          <button @click="showGuide = true" class="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span class="hidden xl:inline">Guide</span>
+          </button>
+
           <!-- File Explorer Collapse Toggle -->
           <button @click="isCodeCollapsed = !isCodeCollapsed" class="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border" :class="!isCodeCollapsed ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
@@ -215,8 +221,9 @@
           
           <!-- BYOK Deploy Tooling -->
           <div class="relative flex items-center group">
-             <input v-model="userVercelToken" type="password" placeholder="Vercel BYOK Token" class="w-40 px-3 py-1.5 bg-[#05080f] border border-slate-700 rounded-l-lg text-xs outline-none focus:border-emerald-500/50 text-slate-300 h-full" />
-             <button @click="deployToVercel" :disabled="!userVercelToken || isDeploying" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 disabled:opacity-50 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-r-lg transition-colors border-y border-r border-emerald-500/30 h-full">
+             <input v-model="userProjectName" type="text" placeholder="Custom URI (e.g. my-store)" class="w-32 px-3 py-1.5 bg-[#05080f] border border-slate-700 border-r-0 rounded-l-lg text-xs outline-none focus:border-emerald-500/50 text-slate-300 h-full" />
+             <input v-model="userVercelToken" type="password" placeholder="Vercel Token" class="w-32 px-3 py-1.5 bg-[#05080f] border border-slate-700 text-xs outline-none focus:border-emerald-500/50 text-slate-300 h-full" />
+             <button @click="deployToVercel" :disabled="!userVercelToken || isDeploying" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 disabled:opacity-50 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-r-lg transition-colors border border-l-0 border-emerald-500/30 h-full">
                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
                {{ isDeploying ? 'Deploying...' : 'Deploy' }}
              </button>
@@ -303,6 +310,46 @@
       </div>
     </div>
   </div>
+
+  <!-- GUIDE MODAL -->
+  <div v-if="showGuide" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click.self="showGuide = false">
+      <div class="bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
+              <h2 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  IRIS Engine Guide
+              </h2>
+              <button @click="showGuide = false" class="text-slate-400 hover:text-white transition-colors">
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+          </div>
+          <div class="p-6 overflow-y-auto custom-textarea text-sm text-slate-300 space-y-6">
+              <div>
+                  <h3 class="text-white font-bold text-base mb-2 border-b border-slate-700 pb-1">1. Live Editing</h3>
+                  <p>Click the <strong>"Live Edit"</strong> button to interact directly with the generated interface. You can click on text to rewrite it, and click on any image placeholder to spawn a native file upload prompt to inject your own images.</p>
+              </div>
+              <div>
+                  <h3 class="text-white font-bold text-base mb-2 border-b border-slate-700 pb-1">2. Conversational Refinement</h3>
+                  <p>After generating your architecture, use the left Refinement sidebar to command the AI to edit your codebase. You can say things like <em>"Turn the background black"</em> or <em>"Add a newsletter section."</em> You can even <strong>Paste (Ctrl+V) an image</strong> into the chatbox to provide visual directives!</p>
+                  <p class="mt-2 text-rose-400 text-xs font-semibold">Note: The AI operates on a free tier API. If you spam requests, you will receive a "Rate Limit Reached" error. Just wait 10 seconds and relax!</p>
+              </div>
+              <div>
+                  <h3 class="text-white font-bold text-base mb-2 border-b border-slate-700 pb-1">3. Custom Web Domains</h3>
+                  <p>You can instantly deploy your creation to the public internet for free using Vercel.</p>
+                  <ol class="list-decimal pl-5 space-y-1 mt-2 mb-2">
+                      <li>Sign up for a free account at Vercel.com.</li>
+                      <li>Go to Account Settings > Tokens and create a new token.</li>
+                      <li>Paste the token into the <strong>"Vercel Token"</strong> box at the top right.</li>
+                      <li>In the <strong>Custom URI</strong> box, type whatever name you want. Vercel will host it at <code class="text-indigo-300 bg-indigo-500/10 px-1 rounded">iris-ts-&lt;your-name&gt;.vercel.app</code>.</li>
+                      <li>Click Deploy!</li>
+                  </ol>
+              </div>
+          </div>
+          <div class="p-4 bg-slate-800/50 border-t border-slate-800 flex justify-end">
+              <button @click="showGuide = false" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-colors">Got it!</button>
+          </div>
+      </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -317,6 +364,8 @@ const refinementImage = ref<string | null>(null)
 const isGenerating = ref(false)
 const isDeploying = ref(false)
 const userVercelToken = ref('') // Support BYOK methodology
+const userProjectName = ref('') // Support custom subdomains
+const showGuide = ref(false) // Toggle for instructions modal
 const isEditMode = ref(false) // State to track visual builder
 const isFullScreen = ref(false) // Toggle to collapse left panel
 const isCodeCollapsed = ref(false) // Toggle to collapse right panel
@@ -375,6 +424,26 @@ const handleRefinementUpload = (event: Event) => {
   if (refinementInputRef.value) refinementInputRef.value.value = '';
 }
 
+const handleRefinementPaste = (e: ClipboardEvent) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const blob = items[i].getAsFile();
+      if (blob) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          refinementImage.value = event.target?.result as string;
+        };
+        reader.readAsDataURL(blob);
+      }
+      e.preventDefault(); // Stop normal pasting if an image was captured
+      break; 
+    }
+  }
+}
+
 const handleAssetUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -382,21 +451,20 @@ const handleAssetUpload = (event: Event) => {
 
   const reader = new FileReader();
   reader.onload = (e) => {
+    isSyncingFromIframe.value = true;
     const result = e.target?.result as string; 
     const base64Data = result.split(',')[1];
     
-    const assetName = `assets/${file.name.replace(/\s+/g, '-')}`;
-    const existing = generatedFiles.value.find(f => f.name === assetName);
-    if (!existing) {
-        generatedFiles.value.push({ 
-          name: assetName, 
-          content: base64Data, 
-          isAsset: true,
-          encoding: 'base64'
-        });
-    } else {
-        existing.content = base64Data;
-    }
+    const baseName = file.name.replace(/\.[^/.]+$/, "");
+    const extension = file.name.split('.').pop() || 'png';
+    const assetName = `assets/${baseName.replace(/\s+/g, '-')}-${Date.now().toString().slice(-6)}.${extension}`;
+
+    generatedFiles.value.push({ 
+      name: assetName, 
+      content: base64Data, 
+      isAsset: true,
+      encoding: 'base64'
+    });
 
     iframeRef.value?.contentWindow?.postMessage({
         type: 'UPDATE_IMAGE_SRC',
@@ -404,6 +472,8 @@ const handleAssetUpload = (event: Event) => {
         src: `./${assetName}`,
         base64: result
     }, '*');
+
+    setTimeout(() => { isSyncingFromIframe.value = false; }, 150);
   };
   reader.readAsDataURL(file);
   
@@ -504,7 +574,7 @@ const refineUI = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        files: generatedFiles.value,
+        files: generatedFiles.value.filter(f => !f.isAsset),
         userPrompt: refinementPrompt.value,
         image: refinementImage.value
       })
@@ -609,12 +679,22 @@ watch(generatedFiles, (newFiles) => {
 
   let sourceHTML = htmlFile.content
   
+  // Base64 replacement for relative asset paths in local preview
+  newFiles.forEach(f => {
+      if (f.isAsset && f.name.startsWith('assets/')) {
+          const regex = new RegExp(`src=["'](\\.\\/)?${f.name}["']`, 'g');
+          const ext = f.name.split('.').pop()?.toLowerCase() || '';
+          const mime = ext === 'png' ? 'image/png' : ext === 'svg' ? 'image/svg+xml' : 'image/jpeg';
+          sourceHTML = sourceHTML.replace(regex, `src="data:${mime};base64,${f.content}" data-actual-src="./${f.name}"`);
+      }
+  });
+
   // Inject the advanced DOM mutator / anti-white-screen logic right before closing </body>
   const advancedScript = `
       <style id="iris-injected-style">
         .iris-editable { outline: 2px dashed rgba(245, 158, 11, 0.5) !important; outline-offset: 2px; cursor: text; }
         .iris-editable:hover { outline-color: rgba(245, 158, 11, 1) !important; background-color: rgba(245, 158, 11, 0.05); }
-        .iris-editable-img { outline: 2px dashed rgba(16, 185, 129, 0.5) !important; cursor: pointer; transition: all 0.2s;}
+        .iris-editable-img { outline: 3px dashed rgba(16, 185, 129, 0.8) !important; cursor: pointer; transition: all 0.2s; z-index: 9999 !important; position: relative !important; pointer-events: auto !important; }
         .iris-editable-img:hover { outline-color: rgba(16, 185, 129, 1) !important; filter: brightness(0.8); }
       </style>
       <script id="iris-injected-script">
@@ -689,6 +769,7 @@ watch(generatedFiles, (newFiles) => {
                        img.dataset.irisId = 'img-' + index;
                        img.dataset.originalOnclick = img.onclick; 
                        img.onclick = (e) => {
+                           e.stopPropagation();
                            e.preventDefault();
                            // Talk to Vue app to trigger Native File Upload
                            window.parent.postMessage({ type: 'TRIGGER_IMAGE_UPLOAD', id: img.dataset.irisId }, '*');

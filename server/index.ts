@@ -26,7 +26,7 @@ app.post('/analyze', async (c) => {
         const prompt = `You are an elite Senior UI/UX Developer and System Architect. Look at the provided image to extract its dominant color palette, mood, and aesthetic.
 ${userPrompt ? `The user also specifically requested: "${userPrompt}"` : 'Construct a responsive landing page based on this aesthetic.'}
 
-Generate a complete front-end architecture targeting this visual identity. You must write everything in pure HTML format. Ensure the design is PERFECTLY RESPONSIVE for both mobile and desktop views using Tailwind classes. If you need reactivity, use Vue 3 via script tags (e.g., <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>). Use Tailwind CSS for all styling (e.g., <script src="https://cdn.tailwindcss.com"></script>). Ensure all icons use inline SVG or a CDN (like FontAwesome or Phosphor). Ensure ALL interactive elements (tabs, modals, toggles) have working Vue logic.
+Generate a complete front-end architecture targeting this visual identity. You must write everything in pure HTML format. Ensure the design is PERFECTLY RESPONSIVE for both mobile and desktop views using Tailwind classes. If you need reactivity, use Vue 3 via script tags (e.g., <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>). Use Tailwind CSS for all styling (e.g., <script src="https://cdn.tailwindcss.com"></script>). Ensure all icons use inline SVG or a CDN (like FontAwesome or Phosphor). Ensure ALL interactive elements (tabs, modals, menus, toggles) default to a CLOSED/HIDDEN state and have fully working toggle/dismiss Vue logic so they can be closed by users.
 
 Return a strictly valid JSON response containing EXACTLY this structure:
 {
@@ -105,8 +105,9 @@ CRITICAL RULES:
 1. FOCUS INTENSELY ON EXACTLY WHAT THE USER ASKS. If they ask to change colors to black, you MUST find EVERY single Tailwind color class (e.g. bg-white, text-gray-500, from-indigo-500, ring-blue-300) and meticulously replace them with equivalent black/dark variants (e.g. bg-black, text-black, etc). Do not be lazy. Be extremely thorough.
 2. If the user asks to add a section, inject it structurally where it makes sense while matching the existing established UI component styles perfectly.
 3. If an image is provided in this prompt, use it as intense visual context for what they want to achieve, or specifically where to apply the edit.
-4. DO NOT rewrite the entire application from scratch. Keep the exact same structure, base styling, and logic where possible, and only append/edit/replace what is necessary.
-5. Return the exact same JSON format as the original architecture (array of files).
+4. Ensure any modals, dropdowns, or overlays you create or edit have fully working dismiss/close functionality, and default to a hidden state.
+5. DO NOT rewrite the entire application from scratch. Keep the exact same structure, base styling, and logic where possible, and only append/edit/replace what is necessary.
+6. Return the exact same JSON format as the original architecture (array of files).
 
 CURRENT ARCHITECTURE:
 ${JSON.stringify({ files })}
@@ -161,6 +162,9 @@ Return ONLY the strictly valid JSON response containing EXACTLY the same structu
         return c.json(json)
     } catch (error: any) {
         console.error('Error during refinement:', error)
+        if (error.status === 429 || error.message?.includes('429') || error.message?.includes('RetryInfo')) {
+            return c.json({ error: 'AI Rate Limit Reached! Please wait 10 seconds before refining again.' }, 429)
+        }
         return c.json({ error: error.message }, 500)
     }
 })
@@ -198,6 +202,7 @@ app.post('/deploy', async (c) => {
             },
             body: JSON.stringify({
                 name: name || 'iris-ts-synth',
+                target: 'production',
                 projectSettings: { framework: null },
                 files: vercelFiles
             })
@@ -210,7 +215,8 @@ app.post('/deploy', async (c) => {
             return c.json({ error: vercelData.error?.message || 'Deployment failed' }, response.status as any);
         }
 
-        return c.json({ url: vercelData.url }, 200)
+        const productionUrl = (vercelData.alias && vercelData.alias.length > 0) ? vercelData.alias[0] : vercelData.url;
+        return c.json({ url: productionUrl }, 200)
     } catch (error: any) {
         console.error('Error during deployment:', error)
         return c.json({ error: error.message }, 500)
