@@ -141,10 +141,9 @@
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             Export .ZIP Source
           </button>
-          <button class="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border border-emerald-500/30 cursor-not-allowed opacity-50 relative group">
+          <button @click="deployToVercel" class="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border border-emerald-500/30 relative group">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
-            Deploy Live (1 Lume)
-            <div class="absolute top-full right-0 mt-2 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap shadow-lg border border-slate-700 pointer-events-none">Coming Soon: Connect Vercel Token</div>
+            {{ isDeploying ? 'Deploying...' : 'Deploy Live (Vercel)' }}
           </button>
         </div>
       </div>
@@ -233,6 +232,7 @@ const isCameraOpen = ref(false)
 const capturedImage = ref<string | null>(null)
 const userPrompt = ref('')
 const isGenerating = ref(false)
+const isDeploying = ref(false)
 
 // Replaced simple code string with robust file tree
 const generatedFiles = ref<{name: string, content: string}[]>([])
@@ -362,6 +362,46 @@ const downloadZip = async () => {
   a.click();
   
   URL.revokeObjectURL(url);
+}
+
+const deployToVercel = async () => {
+  if (generatedFiles.value.length === 0) return;
+  isDeploying.value = true;
+  
+  try {
+    const deploymentData = {
+      name: `iris-ts-deploy-${Date.now()}`,
+      files: generatedFiles.value.map(file => ({
+        file: file.name,
+        data: file.content
+      })),
+      projectSettings: {
+        framework: null
+      }
+    };
+    
+    // Using a public Vercel endpoint or relaying through Hono backend
+    const response = await fetch('http://127.0.0.1:3000/deploy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(deploymentData)
+    });
+    
+    if (!response.ok) throw new Error('Deployment failed on backend');
+    const result = await response.json();
+    
+    if (result.url) {
+      window.open(`https://${result.url}`, '_blank');
+    } else {
+      alert('Deployment submitted, but no URL was returned.');
+    }
+  } catch (err: any) {
+    alert('Deployment feature requires backend Vercel API Key integration (coming soon!)');
+  } finally {
+    isDeploying.value = false;
+  }
 }
 
 // Watch specifically for changes to the HTML file in the array to update the iframe preview Live

@@ -79,6 +79,57 @@ DO NOT include markdown tags like \`\`\`json. Return ONLY the raw JSON string.`
     }
 })
 
+app.post('/deploy', async (c) => {
+    try {
+        const body = await c.req.json()
+        const { name, files } = body
+
+        if (!process.env.VERCEL_API_KEY) {
+            return c.json({ error: 'VERCEL_API_KEY is missing from server environment' }, 500)
+        }
+
+        // Format files for Vercel deploy API format
+        const vercelFiles = files.map((f: any) => ({
+            file: f.file,
+            data: f.data
+        }))
+
+        // Optional standard structure to ensure it's served nicely on Vercel
+        if (!vercelFiles.find((f: any) => f.file === 'vercel.json')) {
+            vercelFiles.push({
+                file: 'vercel.json',
+                data: JSON.stringify({ "version": 2, "builds": [{ "src": "index.html", "use": "@vercel/static" }] })
+            })
+        }
+
+        // Target Vercel Deployments endpoint
+        const response = await fetch('https://api.vercel.com/v13/deployments', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.VERCEL_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name || 'iris-ts-synth',
+                projectSettings: { framework: null },
+                files: vercelFiles
+            })
+        });
+
+        const vercelData = await response.json();
+
+        if (!response.ok) {
+            console.error('Vercel API Error:', vercelData);
+            return c.json({ error: vercelData.error?.message || 'Deployment failed' }, response.status as any);
+        }
+
+        return c.json({ url: vercelData.url }, 200)
+    } catch (error: any) {
+        console.error('Error during deployment:', error)
+        return c.json({ error: error.message }, 500)
+    }
+})
+
 const port = 3000
 console.log(`Server is running on http://localhost:${port}`)
 
