@@ -1,7 +1,11 @@
 <template>
   <div class="h-screen w-full flex bg-[#030712] text-slate-200 font-sans overflow-hidden selection:bg-indigo-500/30">
+    <!-- Non-destructive inputs required persistently -->
+    <input type="file" ref="assetUploadRef" @change="handleAssetUpload" accept="image/*,video/*" class="hidden" />
+    <input type="file" ref="refinementInputRef" @change="handleRefinementUpload" accept="image/*" class="hidden" />
+
     <!-- Sidebar / Control Panel -->
-    <div class="w-80 flex-shrink-0 flex flex-col border-r border-slate-800/60 bg-[#0B0F19] relative z-20 shadow-2xl">
+    <div v-show="!isFullScreen" class="w-80 flex-shrink-0 flex flex-col border-r border-slate-800/60 bg-[#0B0F19] relative z-20 shadow-2xl transition-all flex-grow-0">
       <!-- Header -->
       <div class="p-6 border-b border-slate-800/60 bg-gradient-to-b from-slate-900 to-transparent">
         <h1 class="text-2xl font-black tracking-tight bg-gradient-to-br from-indigo-400 via-purple-400 to-fuchsia-400 text-transparent bg-clip-text drop-shadow-sm">IRIS-TS</h1>
@@ -10,93 +14,145 @@
 
       <!-- Action Panel -->
       <div class="p-6 flex-1 overflow-y-auto flex flex-col gap-6 no-scrollbar">
-        <!-- Input Selector -->
-        <div class="space-y-3">
-          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-            <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
-            1. Visual Input
-          </label>
-          <div class="grid grid-cols-2 gap-2">
-            <button 
-              type="button"
-              @click="triggerUpload" 
-              class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-700/50 hover:border-indigo-500/50 bg-slate-800/30 hover:bg-indigo-500/10 transition-all group"
-            >
-              <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-400 mb-1 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-              <span class="text-[11px] font-semibold text-slate-300">Upload Data</span>
-            </button>
-            <button 
-              type="button"
-              @click="startCamera" 
-              class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-700/50 hover:border-fuchsia-500/50 bg-slate-800/30 hover:bg-fuchsia-500/10 transition-all group"
-            >
-              <svg class="w-5 h-5 text-slate-400 group-hover:text-fuchsia-400 mb-1 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
-              <span class="text-[11px] font-semibold text-slate-300">Live Lens</span>
-            </button>
-            <input type="file" ref="fileInputRef" @change="handleFileUpload" accept="image/*" class="hidden" />
-          </div>
-        </div>
-
-        <!-- Media Viewport -->
-        <div class="relative w-full aspect-[4/3] bg-[#05080f] rounded-xl overflow-hidden border border-slate-700/50 shadow-inner group">
-          <div v-if="!isCameraOpen && !capturedImage" class="absolute inset-0 flex flex-col items-center justify-center text-slate-600">
-            <svg class="w-8 h-8 mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            <span class="text-[10px] font-medium uppercase tracking-widest">No Signal</span>
-          </div>
-
-          <video v-show="isCameraOpen && !capturedImage" ref="videoRef" autoplay playsinline class="w-full h-full object-cover"></video>
-          <img v-if="capturedImage" :src="capturedImage" alt="Captured Scene" class="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
-          <canvas ref="canvasRef" class="hidden"></canvas>
-          
-          <!-- Scanning Overlay -->
-          <div v-if="isGenerating" class="absolute inset-0 bg-indigo-950/40 backdrop-blur-[2px] flex items-center justify-center overflow-hidden">
-            <div class="h-1 w-full bg-indigo-400/80 absolute top-0 shadow-[0_0_20px_rgba(99,102,241,1)] animate-[scan_2s_ease-in-out_infinite]"></div>
-            <div class="px-3 py-1.5 bg-indigo-900/80 border border-indigo-500/30 rounded-full text-[10px] font-bold text-indigo-300 tracking-[0.2em] uppercase backdrop-blur-md">Analyzing</div>
-          </div>
-
-          <!-- Camera Controls Overlay -->
-          <div v-if="isCameraOpen && !capturedImage" class="absolute bottom-3 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <button type="button" @click="takePhoto" class="w-12 h-12 rounded-full border-4 border-white/30 bg-white/20 hover:bg-white hover:border-white transition-all backdrop-blur-sm"></button>
-          </div>
-        </div>
-
-        <!-- Custom Prompt -->
-        <div class="space-y-2">
-          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-            <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-            2. Structural Prompt
-          </label>
-          <textarea
-            v-model="userPrompt"
-            class="w-full h-24 bg-[#05080f] border border-slate-700/50 rounded-xl p-3 text-xs text-slate-300 outline-none focus:border-purple-500/50 transition-colors resize-none placeholder-slate-600 custom-textarea"
-            placeholder="e.g., Build a modern clothing brand landing page using this vibe. Include a hero section, products grid, and footer."
-          ></textarea>
-        </div>
-
-        <!-- Synthesis Core -->
-        <div class="space-y-3 pt-2">
-          <button 
-            type="button"
-            @click="generateUI" 
-            :disabled="!capturedImage || isGenerating"
-            class="w-full relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
-          >
-            <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 transition-all duration-500 group-hover:scale-[1.05]"></div>
-            <div class="relative px-4 py-3.5 flex items-center justify-center gap-2 text-white font-bold tracking-wide text-sm">
-              <svg v-if="isGenerating" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-              <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-              {{ isGenerating ? 'Synthesizing Frontend...' : 'Initialize Engine' }}
+        <div v-if="generatedFiles.length === 0" class="space-y-6">
+            <!-- Input Selector -->
+            <div class="space-y-3">
+              <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+                1. Visual Input
+              </label>
+              <div class="grid grid-cols-2 gap-2">
+                <button 
+                  type="button"
+                  @click="triggerUpload" 
+                  class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-700/50 hover:border-indigo-500/50 bg-slate-800/30 hover:bg-indigo-500/10 transition-all group"
+                >
+                  <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-400 mb-1 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                  <span class="text-[11px] font-semibold text-slate-300">Upload Data</span>
+                </button>
+                <button 
+                  type="button"
+                  @click="startCamera" 
+                  class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-700/50 hover:border-fuchsia-500/50 bg-slate-800/30 hover:bg-fuchsia-500/10 transition-all group"
+                >
+                  <svg class="w-5 h-5 text-slate-400 group-hover:text-fuchsia-400 mb-1 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+                  <span class="text-[11px] font-semibold text-slate-300">Live Lens</span>
+                </button>
+                <input type="file" ref="fileInputRef" @change="handleFileUpload" accept="image/*" class="hidden" />
+              </div>
             </div>
-          </button>
+
+            <!-- Media Viewport -->
+            <div class="relative w-full aspect-[4/3] bg-[#05080f] rounded-xl overflow-hidden border border-slate-700/50 shadow-inner group">
+              <div v-if="!isCameraOpen && !capturedImage" class="absolute inset-0 flex flex-col items-center justify-center text-slate-600">
+                <svg class="w-8 h-8 mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span class="text-[10px] font-medium uppercase tracking-widest">No Signal</span>
+              </div>
+
+              <video v-show="isCameraOpen && !capturedImage" ref="videoRef" autoplay playsinline class="w-full h-full object-cover"></video>
+              <img v-if="capturedImage" :src="capturedImage" alt="Captured Scene" class="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
+              <canvas ref="canvasRef" class="hidden"></canvas>
+              
+              <!-- Scanning Overlay -->
+              <div v-if="isGenerating" class="absolute inset-0 bg-indigo-950/40 backdrop-blur-[2px] flex items-center justify-center overflow-hidden">
+                <div class="h-1 w-full bg-indigo-400/80 absolute top-0 shadow-[0_0_20px_rgba(99,102,241,1)] animate-[scan_2s_ease-in-out_infinite]"></div>
+                <div class="px-3 py-1.5 bg-indigo-900/80 border border-indigo-500/30 rounded-full text-[10px] font-bold text-indigo-300 tracking-[0.2em] uppercase backdrop-blur-md">Analyzing</div>
+              </div>
+
+              <!-- Camera Controls Overlay -->
+              <div v-if="isCameraOpen && !capturedImage" class="absolute bottom-3 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <button type="button" @click="takePhoto" class="w-12 h-12 rounded-full border-4 border-white/30 bg-white/20 hover:bg-white hover:border-white transition-all backdrop-blur-sm"></button>
+              </div>
+            </div>
+
+            <!-- Custom Prompt -->
+            <div class="space-y-2">
+              <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                2. Structural Prompt
+              </label>
+              <textarea
+                v-model="userPrompt"
+                class="w-full h-24 bg-[#05080f] border border-slate-700/50 rounded-xl p-3 text-xs text-slate-300 outline-none focus:border-purple-500/50 transition-colors resize-none placeholder-slate-600 custom-textarea"
+                placeholder="e.g., Build a modern clothing brand landing page using this vibe. Include a hero section, products grid, and footer."
+              ></textarea>
+            </div>
+
+            <!-- Synthesis Core -->
+            <div class="space-y-3 pt-2">
+              <button 
+                type="button"
+                @click="generateUI" 
+                :disabled="!capturedImage || isGenerating"
+                class="w-full relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
+              >
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 transition-all duration-500 group-hover:scale-[1.05]"></div>
+                <div class="relative px-4 py-3.5 flex items-center justify-center gap-2 text-white font-bold tracking-wide text-sm">
+                  <svg v-if="isGenerating" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                  {{ isGenerating ? 'Synthesizing Frontend...' : 'Initialize Engine' }}
+                </div>
+              </button>
+              
+              <button 
+                type="button"
+                v-if="capturedImage && !isGenerating"
+                @click="resetCamera" 
+                class="w-full px-4 py-2 bg-transparent hover:bg-slate-800/50 border border-slate-700/50 hover:border-slate-600 text-slate-400 rounded-xl font-medium text-xs transition-all"
+              >
+                Clear Input Data
+              </button>
+            </div>
+        </div>
+        
+        <!-- Post-Generation Conversational AI Refinement -->
+        <div v-else class="space-y-6 flex-1 flex flex-col">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+              Architecture Active
+            </label>
+            <button @click="resetEngine" class="text-[10px] text-rose-400 hover:text-rose-300 font-bold uppercase tracking-wider underline underline-offset-2">Reset Engine</button>
+          </div>
           
-          <button 
-            type="button"
-            v-if="capturedImage && !isGenerating"
-            @click="resetCamera" 
-            class="w-full px-4 py-2 bg-transparent hover:bg-slate-800/50 border border-slate-700/50 hover:border-slate-600 text-slate-400 rounded-xl font-medium text-xs transition-all"
-          >
-            Clear Input Data
-          </button>
+          <div class="flex-1 flex flex-col border border-slate-700/50 bg-[#05080f] rounded-xl overflow-hidden shadow-inner">
+             <div class="p-4 bg-slate-800/50 border-b border-slate-700/50">
+               <p class="text-[11px] text-slate-300 leading-relaxed font-medium">Use AI to automatically refine the generated code. Example: <em>"Add a Contact Us form to the footer", "Change the hero section to an image carousel"</em></p>
+             </div>
+             
+             <div class="flex-1 p-3 flex flex-col relative">
+                <div v-if="refinementImage" class="relative w-24 h-24 mb-3 rounded-lg overflow-hidden border border-slate-700 shadow-md group shrink-0">
+                    <img :src="refinementImage" class="w-full h-full object-cover" />
+                    <button @click="clearRefinementImage" class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <textarea
+                  v-model="refinementPrompt"
+                  class="w-full flex-1 bg-transparent text-xs text-slate-200 outline-none resize-none placeholder-slate-600 custom-textarea pr-10"
+                  placeholder="How can I improve this architecture?..."
+                ></textarea>
+                <button @click="triggerRefinementUpload" class="absolute bottom-4 right-4 p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 border border-slate-700 transition-colors shadow-black/50 shadow-md" title="Attach Visual Context">
+                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </button>
+             </div>
+             
+             <div class="p-3 border-t border-slate-700/50 bg-slate-800/30">
+                <button 
+                  type="button"
+                  @click="refineUI" 
+                  :disabled="!refinementPrompt || isGenerating"
+                  class="w-full relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed rounded-lg border border-emerald-500/50"
+                >
+                  <div class="absolute inset-0 bg-emerald-600/20 group-hover:bg-emerald-600/30 transition-all duration-300"></div>
+                  <div class="relative px-4 py-2 flex items-center justify-center gap-2 text-emerald-400 font-bold tracking-wide text-xs uppercase">
+                    <svg v-if="isGenerating" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                    {{ isGenerating ? 'Refining Code...' : 'Execute Refinement' }}
+                  </div>
+                </button>
+             </div>
+          </div>
         </div>
 
         <!-- Identity Output -->
@@ -137,13 +193,38 @@
         </div>
         
         <div v-if="generatedFiles.length > 0" class="flex gap-2">
+          
+          <!-- File Explorer Collapse Toggle -->
+          <button @click="isCodeCollapsed = !isCodeCollapsed" class="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border" :class="!isCodeCollapsed ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+            <span class="hidden xl:inline">{{ isCodeCollapsed ? 'Show Code' : 'Hide Code' }}</span>
+          </button>
+
+          <!-- Full Screen Expand Toggle -->
+          <button @click="isFullScreen = !isFullScreen" class="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border" :class="isFullScreen ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'">
+            <svg v-if="!isFullScreen" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+            <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 14h4v4m0-4l-5 5M20 10h-4V6m0 4l5-5M10 4v4H6m4 0l-5-5M14 20v-4h4m-4 0l5 5" /></svg>
+            {{ isFullScreen ? 'Exit Expand' : 'Expand' }}
+          </button>
+
+          <!-- Live Edit Mode Toggle -->
+           <button @click="toggleEditMode" class="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border" :class="isEditMode ? 'bg-amber-600/20 text-amber-500 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+            {{ isEditMode ? 'Exit Edit Mode' : 'Live Edit' }}
+          </button>
+          
+          <!-- BYOK Deploy Tooling -->
+          <div class="relative flex items-center group">
+             <input v-model="userVercelToken" type="password" placeholder="Vercel BYOK Token" class="w-40 px-3 py-1.5 bg-[#05080f] border border-slate-700 rounded-l-lg text-xs outline-none focus:border-emerald-500/50 text-slate-300 h-full" />
+             <button @click="deployToVercel" :disabled="!userVercelToken || isDeploying" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 disabled:opacity-50 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-r-lg transition-colors border-y border-r border-emerald-500/30 h-full">
+               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+               {{ isDeploying ? 'Deploying...' : 'Deploy' }}
+             </button>
+          </div>
+          
           <button @click="downloadZip" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border border-slate-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             Export .ZIP Source
-          </button>
-          <button @click="deployToVercel" class="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border border-emerald-500/30 relative group">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
-            {{ isDeploying ? 'Deploying...' : 'Deploy Live (Vercel)' }}
           </button>
         </div>
       </div>
@@ -190,7 +271,7 @@
         </div>
 
         <!-- File Explorer & Code Editor -->
-        <div class="w-full lg:w-[450px] flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-slate-800/60 bg-[#0B0F19] order-1 lg:order-2">
+        <div v-show="!isFullScreen && !isCodeCollapsed" class="w-full lg:w-[450px] flex-shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-slate-800/60 bg-[#0B0F19] order-1 lg:order-2 transition-all">
           
           <!-- File Tabs Header -->
           <div class="flex items-center overflow-x-auto bg-slate-900 border-b border-slate-800/60 no-scrollbar">
@@ -225,17 +306,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted, computed } from 'vue'
+import { ref, watch, onUnmounted, computed, onMounted } from 'vue'
 import JSZip from 'jszip'
 
 const isCameraOpen = ref(false)
 const capturedImage = ref<string | null>(null)
 const userPrompt = ref('')
+const refinementPrompt = ref('')
+const refinementImage = ref<string | null>(null)
 const isGenerating = ref(false)
 const isDeploying = ref(false)
+const userVercelToken = ref('') // Support BYOK methodology
+const isEditMode = ref(false) // State to track visual builder
+const isFullScreen = ref(false) // Toggle to collapse left panel
+const isCodeCollapsed = ref(false) // Toggle to collapse right panel
+const isSyncingFromIframe = ref(false) // Lock out the watch loop
+const assetUploadRef = ref<HTMLInputElement | null>(null)
+const refinementInputRef = ref<HTMLInputElement | null>(null)
+const pendingImageTargetId = ref<string | null>(null)
 
 // Replaced simple code string with robust file tree
-const generatedFiles = ref<{name: string, content: string}[]>([])
+const generatedFiles = ref<{name: string, content: string, isAsset?: boolean, encoding?: string}[]>([])
 const activeFileIndex = ref(0)
 const iframeSrcDoc = ref('')
 
@@ -266,6 +357,58 @@ const handleFileUpload = (event: Event) => {
     };
     reader.readAsDataURL(file);
   }
+}
+
+const triggerRefinementUpload = () => { refinementInputRef.value?.click(); }
+const clearRefinementImage = () => { refinementImage.value = null; }
+
+const handleRefinementUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      refinementImage.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+  if (refinementInputRef.value) refinementInputRef.value.value = '';
+}
+
+const handleAssetUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const result = e.target?.result as string; 
+    const base64Data = result.split(',')[1];
+    
+    const assetName = `assets/${file.name.replace(/\s+/g, '-')}`;
+    const existing = generatedFiles.value.find(f => f.name === assetName);
+    if (!existing) {
+        generatedFiles.value.push({ 
+          name: assetName, 
+          content: base64Data, 
+          isAsset: true,
+          encoding: 'base64'
+        });
+    } else {
+        existing.content = base64Data;
+    }
+
+    iframeRef.value?.contentWindow?.postMessage({
+        type: 'UPDATE_IMAGE_SRC',
+        id: pendingImageTargetId.value,
+        src: `./${assetName}`,
+        base64: result
+    }, '*');
+  };
+  reader.readAsDataURL(file);
+  
+  // Reset input
+  if (assetUploadRef.value) assetUploadRef.value.value = '';
 }
 
 const startCamera = async () => {
@@ -341,13 +484,67 @@ const generateUI = async () => {
   }
 }
 
+const resetEngine = () => {
+    if (confirm('Are you sure you want to reset the engine? All unsaved work will be lost.')) {
+        generatedFiles.value = [];
+        capturedImage.value = null;
+        userPrompt.value = '';
+        refinementPrompt.value = '';
+        isEditMode.value = false;
+        iframeSrcDoc.value = '';
+    }
+}
+
+const refineUI = async () => {
+  if (!refinementPrompt.value || generatedFiles.value.length === 0) return
+  isGenerating.value = true
+  
+  try {
+    const response = await fetch('http://127.0.0.1:3000/refine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        files: generatedFiles.value,
+        userPrompt: refinementPrompt.value,
+        image: refinementImage.value
+      })
+    })
+    if (!response.ok) throw new Error(`Server error: ${response.statusText}`)
+    
+    const data = await response.json()
+    if (data.files) {
+      // Intelligently merge files back in so we don't drop binary assets
+      data.files.forEach((refinedFile: any) => {
+          const index = generatedFiles.value.findIndex(f => f.name === refinedFile.name);
+          if (index !== -1 && !generatedFiles.value[index].isAsset) {
+              generatedFiles.value[index].content = refinedFile.content;
+          } else if (index === -1) {
+              generatedFiles.value.push(refinedFile);
+          }
+      });
+      refinementPrompt.value = ''; // clear upon success
+      refinementImage.value = null;
+    } else if (data.error) {
+       alert('Server error: ' + data.error)
+    }
+  } catch (err: any) {
+    alert(err.message || 'Error connecting to backend.')
+  } finally {
+    isGenerating.value = false
+  }
+}
+
 const downloadZip = async () => {
   if (generatedFiles.value.length === 0) return;
   const zip = new JSZip();
   
   // Add all mapped files to ZIP folder structure
   generatedFiles.value.forEach(file => {
-    zip.file(file.name, file.content);
+    if (file.isAsset) {
+      zip.file(file.name, file.content, { base64: true });
+    } else {
+      zip.file(file.name, file.content);
+    }
   });
   
   // Add a nice read.me detailing this came from IRIS-TS
@@ -365,7 +562,7 @@ const downloadZip = async () => {
 }
 
 const deployToVercel = async () => {
-  if (generatedFiles.value.length === 0) return;
+  if (generatedFiles.value.length === 0 || !userVercelToken.value) return;
   isDeploying.value = true;
   
   try {
@@ -373,11 +570,10 @@ const deployToVercel = async () => {
       name: `iris-ts-deploy-${Date.now()}`,
       files: generatedFiles.value.map(file => ({
         file: file.name,
-        data: file.content
+        data: file.content,
+        encoding: file.isAsset ? 'base64' : 'utf-8'
       })),
-      projectSettings: {
-        framework: null
-      }
+      vercelToken: userVercelToken.value // Pass BYOK to Hono Route
     };
     
     // Using a public Vercel endpoint or relaying through Hono backend
@@ -404,8 +600,8 @@ const deployToVercel = async () => {
   }
 }
 
-// Watch specifically for changes to the HTML file in the array to update the iframe preview Live
 watch(generatedFiles, (newFiles) => {
+  if (isSyncingFromIframe.value) return; // Prevent infinite re-render loop
   if (!newFiles || newFiles.length === 0) return
   
   const htmlFile = newFiles.find(f => f.name.toLowerCase().endsWith('.html'))
@@ -413,29 +609,164 @@ watch(generatedFiles, (newFiles) => {
 
   let sourceHTML = htmlFile.content
   
-  // Inject the anti-white-screen logic right before closing </body>
-  const safetyScript = `
-      <script>
-        /* Nulify all interactive redirects/submits to prevent white-screens in IRIS-TS iframe */
+  // Inject the advanced DOM mutator / anti-white-screen logic right before closing </body>
+  const advancedScript = `
+      <style id="iris-injected-style">
+        .iris-editable { outline: 2px dashed rgba(245, 158, 11, 0.5) !important; outline-offset: 2px; cursor: text; }
+        .iris-editable:hover { outline-color: rgba(245, 158, 11, 1) !important; background-color: rgba(245, 158, 11, 0.05); }
+        .iris-editable-img { outline: 2px dashed rgba(16, 185, 129, 0.5) !important; cursor: pointer; transition: all 0.2s;}
+        .iris-editable-img:hover { outline-color: rgba(16, 185, 129, 1) !important; filter: brightness(0.8); }
+      </style>
+      <script id="iris-injected-script">
+        /* Sync logic to push DOM state back to Vue Parent */
+        function syncToParent() {
+            if(window._irisSyncing) return;
+            window._irisSyncing = true;
+            requestAnimationFrame(() => {
+                const clone = document.documentElement.cloneNode(true);
+                
+                // Cleanup injected utility scripts so they don't pollute source
+                const script = clone.querySelector('#iris-injected-script');
+                if (script) script.remove();
+                const style = clone.querySelector('#iris-injected-style');
+                if (style) style.remove();
+                
+                // Cleanup edit classes mapping
+                clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+                clone.querySelectorAll('.iris-editable').forEach(el => el.classList.remove('iris-editable'));
+                clone.querySelectorAll('.iris-editable-img').forEach(el => el.classList.remove('iris-editable-img'));
+                
+                // Replace local base64 datastrings with actual asset file paths for Vercel/Zip
+                clone.querySelectorAll('img[data-actual-src]').forEach(img => {
+                    img.src = img.getAttribute('data-actual-src');
+                    img.removeAttribute('data-actual-src');
+                    img.removeAttribute('data-iris-id');
+                });
+
+                const finalHtml = '<!DOCTYPE html>\\n<html lang="en">\\n' + clone.innerHTML + '\\n</html>';
+                window.parent.postMessage({ type: 'SYNC_HTML', html: finalHtml }, '*');
+                window._irisSyncing = false;
+            });
+        }
+
+        // Attach event listeners to catch user edits
+        document.addEventListener('input', syncToParent);
+        document.addEventListener('blur', syncToParent, true);
+
+        // Block navigation away from the IRIS-TS preview iframe, but allow JS interactivity
         document.addEventListener('submit', (e) => e.preventDefault());
         document.addEventListener('click', (e) => {
            let target = e.target;
            while (target && target !== document) {
-              if (target.tagName === 'A' || (target.tagName === 'BUTTON' && target.type !== 'button')) {
+              if (target.tagName === 'A' && target.hasAttribute('href') && !target.getAttribute('href').startsWith('#')) {
                  e.preventDefault();
+                 console.log("IRIS-TS: Prevented external navigation to " + target.getAttribute('href'));
               }
               target = target.parentNode;
+           }
+        });
+
+        /* IRIS-TS LIVE EDIT MESSAGE RECEIVER */
+        window.addEventListener('message', (event) => {
+           if (event.data.type === 'TOGGLE_EDIT_MODE') {
+               const isEditMode = event.data.value;
+               
+               const textElements = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, button');
+               textElements.forEach(el => {
+                   if(isEditMode) {
+                       el.setAttribute('contenteditable', 'true');
+                       el.classList.add('iris-editable');
+                   } else {
+                       el.removeAttribute('contenteditable');
+                       el.classList.remove('iris-editable');
+                   }
+               });
+
+               const imageElements = document.querySelectorAll('img');
+               imageElements.forEach((img, index) => {
+                   if(isEditMode) {
+                       img.classList.add('iris-editable-img');
+                       img.dataset.irisId = 'img-' + index;
+                       img.dataset.originalOnclick = img.onclick; 
+                       img.onclick = (e) => {
+                           e.preventDefault();
+                           // Talk to Vue app to trigger Native File Upload
+                           window.parent.postMessage({ type: 'TRIGGER_IMAGE_UPLOAD', id: img.dataset.irisId }, '*');
+                       };
+                   } else {
+                       img.classList.remove('iris-editable-img');
+                       img.onclick = img.dataset.originalOnclick || null;
+                   }
+               });
+           }
+           if (event.data.type === 'UPDATE_IMAGE_SRC') {
+               const img = document.querySelector(\`[data-iris-id="\${event.data.id}"]\`);
+               if (img) {
+                   img.src = event.data.base64; // Fallback to instant base64 preview rendering
+                   img.setAttribute('data-actual-src', event.data.src); // Map true relative path for deployment
+                   syncToParent();
+               }
            }
         });
       <\/script>
     </body>
   `;
-  sourceHTML = sourceHTML.replace(/<\/body>/i, safetyScript);
+  sourceHTML = sourceHTML.replace(/<\/body>/i, advancedScript);
 
   iframeSrcDoc.value = sourceHTML;
 }, { deep: true })
 
-onUnmounted(() => stopCamera())
+onMounted(() => {
+  window.addEventListener('message', handleIframeMessage)
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
+onUnmounted(() => {
+  stopCamera()
+  window.removeEventListener('message', handleIframeMessage)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  // Only warn if they actually have generated architecture that could be lost
+  if (generatedFiles.value.length > 0) {
+    e.preventDefault();
+    // Setting returnValue to any string triggers the browser's native confirmation dialog
+    // Note: Modern browsers ignore the custom string and show a generic warning
+    e.returnValue = 'You have unsaved generated architecture. Are you sure you want to leave? All data will be lost.';
+    return e.returnValue;
+  }
+}
+
+const handleIframeMessage = (e: MessageEvent) => {
+  if (e.data.type === 'SYNC_HTML') {
+    const htmlFile = generatedFiles.value.find(f => f.name.endsWith('.html'));
+    if (htmlFile && htmlFile.content !== e.data.html) {
+      isSyncingFromIframe.value = true;
+      htmlFile.content = e.data.html;
+      // Allow the dom changes to settle before responding to further watch cycles
+      setTimeout(() => isSyncingFromIframe.value = false, 150);
+    }
+  } else if (e.data.type === 'TRIGGER_IMAGE_UPLOAD') {
+    pendingImageTargetId.value = e.data.id;
+    assetUploadRef.value?.click();
+  }
+}
+
+const iframeRef = ref<HTMLIFrameElement | null>(null)
+const toggleEditMode = () => {
+  isEditMode.value = !isEditMode.value
+  
+  if (iframeRef.value && iframeRef.value.contentWindow) {
+    // Send standard postMessage to iframe directly to trigger DOM updates without reloading framework
+    iframeRef.value.contentWindow.postMessage({
+      type: 'TOGGLE_EDIT_MODE',
+      value: isEditMode.value
+    }, '*')
+  }
+}
+
+
 </script>
 
 <style>
