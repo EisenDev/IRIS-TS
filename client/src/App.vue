@@ -121,11 +121,13 @@
              </div>
              
              <div class="flex-1 p-3 flex flex-col relative">
-                <div v-if="refinementImage" class="relative w-24 h-24 mb-3 rounded-lg overflow-hidden border border-slate-700 shadow-md group shrink-0">
-                    <img :src="refinementImage" class="w-full h-full object-cover" />
-                    <button @click="clearRefinementImage" class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
+                <div v-if="refinementImages.length > 0" class="flex flex-wrap gap-2 mb-3">
+                    <div v-for="(img, index) in refinementImages" :key="index" class="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 shadow-md group shrink-0">
+                        <img :src="img" class="w-full h-full object-cover" />
+                        <button @click="removeRefinementImage(index)" class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity" title="Remove">
+                            <svg class="w-4 h-4 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
                 </div>
                 <textarea
                   v-model="refinementPrompt"
@@ -220,14 +222,10 @@
           </button>
           
           <!-- BYOK Deploy Tooling -->
-          <div class="relative flex items-center group">
-             <input v-model="userProjectName" type="text" placeholder="Custom URI (e.g. my-store)" class="w-32 px-3 py-1.5 bg-[#05080f] border border-slate-700 border-r-0 rounded-l-lg text-xs outline-none focus:border-emerald-500/50 text-slate-300 h-full" />
-             <input v-model="userVercelToken" type="password" placeholder="Vercel Token" class="w-32 px-3 py-1.5 bg-[#05080f] border border-slate-700 text-xs outline-none focus:border-emerald-500/50 text-slate-300 h-full" />
-             <button @click="deployToVercel" :disabled="!userVercelToken || isDeploying" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 disabled:opacity-50 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-r-lg transition-colors border border-l-0 border-emerald-500/30 h-full">
-               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
-               {{ isDeploying ? 'Deploying...' : 'Deploy' }}
-             </button>
-          </div>
+          <button @click="showDeployModal = true" class="flex items-center gap-2 px-6 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border border-emerald-500/30">
+             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+             Deploy
+          </button>
           
           <button @click="downloadZip" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border border-slate-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -350,6 +348,72 @@
           </div>
       </div>
   </div>
+
+  <!-- DEPLOY MODAL -->
+  <div v-if="showDeployModal" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click.self="showDeployModal = false">
+      <div v-if="!deploymentSuccessUrl" class="bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl w-full max-w-md overflow-hidden flex flex-col">
+          <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
+              <h2 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                  Deploy to Vercel
+              </h2>
+              <button @click="showDeployModal = false" class="text-slate-400 hover:text-white transition-colors">
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+          </div>
+          <div class="p-6 space-y-6">
+              <div>
+                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">1. Vercel BYOK Token</label>
+                 <input v-model="userVercelToken" type="password" placeholder="Paste your token here..." class="w-full bg-[#05080f] border border-slate-700 text-slate-200 text-sm rounded-lg px-4 py-3 outline-none focus:border-emerald-500/50 placeholder-slate-600" />
+                 <p class="text-[10px] text-slate-500 mt-2">Required. Get this from your Vercel account settings.</p>
+              </div>
+              
+              <div>
+                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">2. Custom Domain Prefix</label>
+                 <div class="flex items-center">
+                    <span class="pl-4 pr-1 py-3 bg-slate-800 border-y border-l border-slate-700 rounded-l-lg text-emerald-400 text-sm select-none">iris-ts-</span>
+                    <input v-model="userProjectName" type="text" placeholder="my-awesome-site" class="flex-1 bg-slate-800 border-y border-slate-700 text-slate-200 text-sm px-1 py-3 outline-none focus:border-emerald-500/50 placeholder-slate-400" />
+                    <span class="pr-4 pl-1 py-3 bg-slate-800 border-y border-r border-slate-700 rounded-r-lg text-slate-500 text-sm select-none">.vercel.app</span>
+                 </div>
+                 <p class="text-[10px] text-slate-500 mt-2">Alphanumeric characters and hyphens only.</p>
+              </div>
+          </div>
+          <div class="p-4 bg-slate-800/50 border-t border-slate-800 flex justify-end gap-3">
+              <button @click="showDeployModal = false" class="px-4 py-2 text-slate-300 hover:text-white font-bold text-sm transition-colors">Cancel</button>
+              <button @click="deployToVercel" :disabled="!userVercelToken || isDeploying || !userProjectName" class="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-lg transition-colors">
+                  <svg v-if="isDeploying" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                  {{ isDeploying ? 'Deploying...' : 'Deploy Now' }}
+              </button>
+          </div>
+      </div>
+      
+      <!-- SUCCESS STATE -->
+      <div v-else class="bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl w-full max-w-md overflow-hidden flex flex-col items-center p-8 text-center ring-1 ring-emerald-500/30">
+        <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mb-6 ring-8 ring-emerald-500/10">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+        </div>
+        <h3 class="text-2xl font-bold text-white mb-2">Deployed Successfully!</h3>
+        <p class="text-slate-400 text-sm mb-6">Your synthesis is now live on the global Vercel edge network.<br/>(It may take up to 60 seconds to fully propagate).</p>
+        
+        <div class="w-full relative group">
+          <input type="text" readonly :value="`https://${deploymentSuccessUrl}`" class="w-full bg-[#05080f] border border-slate-700 text-emerald-400 text-sm font-mono rounded-lg px-4 py-3 pr-24 outline-none cursor-text selection:bg-emerald-500/30" />
+          <button @click="copyToClipboard(`https://${deploymentSuccessUrl}`)" class="absolute right-2 top-2 bottom-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-md transition-colors flex items-center gap-2 border border-slate-600">
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+            COPY
+          </button>
+        </div>
+        
+        <div class="w-full flex gap-3 mt-8">
+            <button @click="deploymentSuccessUrl = ''; showDeployModal = false" class="flex-1 py-2.5 text-slate-300 hover:text-white font-bold text-sm bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700">Close</button>
+            <a :href="`https://${deploymentSuccessUrl}`" target="_blank" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-lg transition-colors border border-emerald-500 flex items-center justify-center gap-2">
+                Open Link
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+            </a>
+        </div>
+      </div>
+
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -360,12 +424,14 @@ const isCameraOpen = ref(false)
 const capturedImage = ref<string | null>(null)
 const userPrompt = ref('')
 const refinementPrompt = ref('')
-const refinementImage = ref<string | null>(null)
+const refinementImages = ref<string[]>([])
 const isGenerating = ref(false)
 const isDeploying = ref(false)
 const userVercelToken = ref('') // Support BYOK methodology
 const userProjectName = ref('') // Support custom subdomains
 const showGuide = ref(false) // Toggle for instructions modal
+const showDeployModal = ref(false) // Toggle for deploy UI
+const deploymentSuccessUrl = ref('') // Store url when deployed
 const isEditMode = ref(false) // State to track visual builder
 const isFullScreen = ref(false) // Toggle to collapse left panel
 const isCodeCollapsed = ref(false) // Toggle to collapse right panel
@@ -409,17 +475,23 @@ const handleFileUpload = (event: Event) => {
 }
 
 const triggerRefinementUpload = () => { refinementInputRef.value?.click(); }
-const clearRefinementImage = () => { refinementImage.value = null; }
+const removeRefinementImage = (index: number) => { refinementImages.value.splice(index, 1); }
 
 const handleRefinementUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      refinementImage.value = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+  const files = target.files;
+  if (!files || files.length === 0) return;
+  
+  for (let i = 0; i < files.length; i++) {
+     if (refinementImages.value.length >= 5) break;
+     const file = files[i];
+     const reader = new FileReader();
+     reader.onload = (e) => {
+       if (e.target?.result && refinementImages.value.length < 5) {
+         refinementImages.value.push(e.target.result as string);
+       }
+     };
+     reader.readAsDataURL(file);
   }
   if (refinementInputRef.value) refinementInputRef.value.value = '';
 }
@@ -430,16 +502,23 @@ const handleRefinementPaste = (e: ClipboardEvent) => {
   
   for (let i = 0; i < items.length; i++) {
     if (items[i].type.indexOf('image') !== -1) {
+      if (refinementImages.value.length >= 5) {
+          alert('Maximum 5 images allowed as context.');
+          e.preventDefault();
+          break;
+      }
+      
       const blob = items[i].getAsFile();
       if (blob) {
         const reader = new FileReader();
         reader.onload = (event) => {
-          refinementImage.value = event.target?.result as string;
+          if (event.target?.result) {
+            refinementImages.value.push(event.target.result as string);
+          }
         };
         reader.readAsDataURL(blob);
       }
       e.preventDefault(); // Stop normal pasting if an image was captured
-      break; 
     }
   }
 }
@@ -536,7 +615,10 @@ const generateUI = async () => {
         userPrompt: userPrompt.value 
       })
     })
-    if (!response.ok) throw new Error(`Server error: ${response.statusText}`)
+    if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || `Server error: ${response.statusText}`);
+    }
     
     const data = await response.json()
     if (data.files) {
@@ -545,7 +627,7 @@ const generateUI = async () => {
       generationTheme.value = data.theme_name || 'Generated Theme'
       generationColors.value = data.colors || []
     } else if (data.error) {
-       alert('Server error: ' + data.error)
+       throw new Error(data.error);
     }
   } catch (err: any) {
     alert(err.message || 'Error connecting to backend.')
@@ -560,6 +642,7 @@ const resetEngine = () => {
         capturedImage.value = null;
         userPrompt.value = '';
         refinementPrompt.value = '';
+        refinementImages.value = [];
         isEditMode.value = false;
         iframeSrcDoc.value = '';
     }
@@ -576,10 +659,13 @@ const refineUI = async () => {
       body: JSON.stringify({ 
         files: generatedFiles.value.filter(f => !f.isAsset),
         userPrompt: refinementPrompt.value,
-        image: refinementImage.value
+        images: refinementImages.value
       })
     })
-    if (!response.ok) throw new Error(`Server error: ${response.statusText}`)
+    if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || `Server error: ${response.statusText}`);
+    }
     
     const data = await response.json()
     if (data.files) {
@@ -593,9 +679,9 @@ const refineUI = async () => {
           }
       });
       refinementPrompt.value = ''; // clear upon success
-      refinementImage.value = null;
+      refinementImages.value = [];
     } else if (data.error) {
-       alert('Server error: ' + data.error)
+       throw new Error(data.error);
     }
   } catch (err: any) {
     alert(err.message || 'Error connecting to backend.')
@@ -632,12 +718,14 @@ const downloadZip = async () => {
 }
 
 const deployToVercel = async () => {
-  if (generatedFiles.value.length === 0 || !userVercelToken.value) return;
+  if (generatedFiles.value.length === 0 || !userVercelToken.value || !userProjectName.value) return;
   isDeploying.value = true;
   
   try {
+    const safeProjectName = userProjectName.value.replace(/[^a-zA-Z0-9-]/g, '').toLowerCase();
+    
     const deploymentData = {
-      name: `iris-ts-deploy-${Date.now()}`,
+      name: `iris-ts-${safeProjectName}`,
       files: generatedFiles.value.map(file => ({
         file: file.name,
         data: file.content,
@@ -649,22 +737,18 @@ const deployToVercel = async () => {
     // Using a public Vercel endpoint or relaying through Hono backend
     const response = await fetch('http://127.0.0.1:3000/deploy', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(deploymentData)
-    });
+    })
     
-    if (!response.ok) throw new Error('Deployment failed on backend');
-    const result = await response.json();
-    
-    if (result.url) {
-      window.open(`https://${result.url}`, '_blank');
+    const data = await response.json()
+    if (response.ok && data.url) {
+      deploymentSuccessUrl.value = data.url;
     } else {
-      alert('Deployment submitted, but no URL was returned.');
+      alert('Deployment failed: ' + (data.error || 'Unknown error'))
     }
   } catch (err: any) {
-    alert('Deployment feature requires backend Vercel API Key integration (coming soon!)');
+    alert(err.message || 'Error connecting to deployment service.')
   } finally {
     isDeploying.value = false;
   }
@@ -796,6 +880,30 @@ watch(generatedFiles, (newFiles) => {
 
   iframeSrcDoc.value = sourceHTML;
 }, { deep: true })
+
+const copyToClipboard = async (text: string) => {
+    try {
+        await navigator.clipboard.writeText(text);
+        const button = document.activeElement as HTMLButtonElement;
+        if(button && button.tagName === 'BUTTON') {
+             const originalText = button.innerHTML;
+             button.innerHTML = '<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> COPIED!';
+             button.classList.add('text-emerald-400', 'border-emerald-500/50');
+             setTimeout(() => {
+                 button.innerHTML = originalText;
+                 button.classList.remove('text-emerald-400', 'border-emerald-500/50');
+             }, 2000);
+        }
+    } catch(e) {
+        alert('Failed to copy to clipboard');
+    }
+}
+
+watch(showDeployModal, (newVal) => {
+   if(newVal) {
+       deploymentSuccessUrl.value = '';
+   } 
+});
 
 onMounted(() => {
   window.addEventListener('message', handleIframeMessage)
