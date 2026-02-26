@@ -216,9 +216,8 @@ app.post('/deploy', async (c) => {
         const body = await c.req.json()
         const { name, files, vercelToken } = body
 
-        if (!vercelToken) {
-            return c.json({ error: 'Bring Your Own Key: Missing Vercel Token in request.' }, 400)
-        }
+        // Sanitize the Vercel Token (strip quotes/spaces)
+        const cleanVercelToken = vercelToken.replace(/['"]/g, '').trim();
 
         // Format files for Vercel deploy API format
         const vercelFiles = files.map((f: any) => ({
@@ -243,13 +242,11 @@ app.post('/deploy', async (c) => {
         const response = await fetch('https://api.vercel.com/v13/deployments', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${vercelToken}`,
+                'Authorization': `Bearer ${cleanVercelToken}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                name: name || 'iris-ts-synth',
-                target: 'production',
-                projectSettings: { framework: null },
+                name: (name || 'iris-ts-synth').substring(0, 100).toLowerCase().replace(/[^a-z0-9-]/g, ''),
                 files: vercelFiles
             })
         });
@@ -257,8 +254,10 @@ app.post('/deploy', async (c) => {
         const vercelData = await response.json();
 
         if (!response.ok) {
-            console.error('Vercel API Error:', vercelData);
-            return c.json({ error: vercelData.error?.message || 'Deployment failed' }, response.status as any);
+            console.error('Vercel API Error:', JSON.stringify(vercelData));
+            // Specifically handle common Vercel errors with cleaner messages
+            const msg = vercelData.error?.message || 'Deployment failed';
+            return c.json({ error: msg }, response.status as any);
         }
 
         const productionUrl = (vercelData.alias && vercelData.alias.length > 0) ? vercelData.alias[0] : vercelData.url;
