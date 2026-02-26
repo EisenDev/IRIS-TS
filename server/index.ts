@@ -136,8 +136,22 @@ DO NOT include markdown tags like \`\`\`json. Return ONLY the raw JSON string.`
         const genStream = await generateWithRotation(requestContents)
 
         return streamText(c, async (stream) => {
-            for await (const chunk of genStream) {
-                await stream.write(chunk.text());
+            // Write a tiny bit of data immediately to keep the Vercel connection alive
+            await stream.write(' ');
+
+            try {
+                for await (const chunk of genStream) {
+                    try {
+                        const parts = chunk.candidates?.[0]?.content?.parts || [];
+                        const text = parts.map(p => p.text).join('') || chunk.text();
+                        if (text) await stream.write(text);
+                    } catch (e) {
+                        console.warn('Chunk process failed', e);
+                    }
+                }
+            } catch (err: any) {
+                console.error('Stream iteration failed:', err);
+                await stream.write(`\n\n{"error": "AI Synthesis interrupted: ${err.message || 'Stream connection lost'}"}`);
             }
         })
     } catch (error: any) {
@@ -193,8 +207,22 @@ Return ONLY the strictly valid JSON response containing EXACTLY the same structu
         const genStream = await generateWithRotation(requestContents)
 
         return streamText(c, async (stream) => {
-            for await (const chunk of genStream) {
-                await stream.write(chunk.text());
+            // Write a tiny bit of data immediately to keep the Vercel connection alive
+            await stream.write(' ');
+
+            try {
+                for await (const chunk of genStream) {
+                    try {
+                        const parts = chunk.candidates?.[0]?.content?.parts || [];
+                        const text = parts.map(p => p.text).join('') || chunk.text();
+                        if (text) await stream.write(text);
+                    } catch (e) {
+                        console.warn('Chunk process failed', e);
+                    }
+                }
+            } catch (err: any) {
+                console.error('Stream iteration failed:', err);
+                await stream.write(`\n\n{"error": "AI Refinement interrupted: ${err.message || 'Stream connection lost'}"}`);
             }
         })
     } catch (error: any) {
