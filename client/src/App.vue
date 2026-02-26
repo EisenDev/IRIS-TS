@@ -607,7 +607,7 @@ const generateUI = async () => {
   isGenerating.value = true
   
   try {
-    const response = await fetch('http://127.0.0.1:3000/analyze', {
+    const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -653,7 +653,7 @@ const refineUI = async () => {
   isGenerating.value = true
   
   try {
-    const response = await fetch('http://127.0.0.1:3000/refine', {
+    const response = await fetch('/api/refine', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -735,7 +735,7 @@ const deployToVercel = async () => {
     };
     
     // Using a public Vercel endpoint or relaying through Hono backend
-    const response = await fetch('http://127.0.0.1:3000/deploy', {
+    const response = await fetch('/api/deploy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(deploymentData)

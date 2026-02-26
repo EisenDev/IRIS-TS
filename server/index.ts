@@ -7,7 +7,7 @@ import { jsonrepair } from 'jsonrepair'
 
 dotenv.config()
 
-const app = new Hono()
+const app = new Hono().basePath('/api')
 
 app.use('/*', cors())
 
@@ -299,9 +299,13 @@ app.post('/deploy', async (c) => {
 })
 
 const port = 3000
-console.log(`Server is running on http://localhost:${port}`)
 
-serve({
-    fetch: app.fetch,
-    port
-})
+if (!process.env.VERCEL) {
+    console.log(`Server is running on http://localhost:${port}`)
+    serve({
+        fetch: app.fetch,
+        port
+    })
+}
+
+export default app;
