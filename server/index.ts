@@ -26,10 +26,9 @@ function getGenerativeModel() {
     const key = keys[currentKeyIndex];
     const genAI = new GoogleGenerativeAI(key);
     return genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         generationConfig: {
-            responseMimeType: 'application/json',
-            maxOutputTokens: 2500
+            responseMimeType: 'application/json'
         }
     });
 }
