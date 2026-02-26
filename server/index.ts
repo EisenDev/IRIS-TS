@@ -11,7 +11,10 @@ const app = new Hono().basePath('/api')
 
 app.use('/*', cors())
 
-app.get('/health', (c) => c.text('OK'))
+app.get('/health', (c) => {
+    const keys = getApiKeys();
+    return c.text(`OK - Keys: ${keys.length}`);
+})
 
 
 let currentKeyIndex = 0;
