@@ -8,5 +8,10 @@
             "destination": "/$1"
         }
     ],
-    "cleanUrls": true
+    "cleanUrls": true,
+    "functions": {
+        "api/[...route].ts": {
+            "maxDuration": 60
+        }
+    }
 }
