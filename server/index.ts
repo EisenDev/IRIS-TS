@@ -5,6 +5,8 @@ import { streamText } from 'hono/streaming'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { jsonrepair } from 'jsonrepair'
 
+declare const process: any;
+
 const app = new Hono().basePath('/api')
 
 app.use('/*', cors())
@@ -186,41 +188,13 @@ Return ONLY the strictly valid JSON response containing EXACTLY the same structu
             });
         }
 
-        const result = await generateWithRotation(requestContents)
-        let text = result.response.text()
+        const genStream = await generateWithRotation(requestContents)
 
-        // Clean up potential markdown formatting and grab only the JSON object
-        text = text.replace(/```json/gi, '').replace(/```/g, '').trim()
-
-        let jsonStr = text;
-        const firstBrace = text.indexOf('{');
-        const lastBrace = text.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
-            jsonStr = text.substring(firstBrace, lastBrace + 1);
-        }
-
-        let json: any
-        try {
-            json = safeJsonParse(jsonStr)
-            // Ensure we don't accidentally drop files the AI thought it didn't need to return
-            const mergedFiles = files.map((originalFile: any) => {
-                const newFile = (json.files || []).find((f: any) => f.name === originalFile.name)
-                return newFile || originalFile
-            })
-                // Add any newly created files
-                ; (json.files || []).forEach((newFile: any) => {
-                    if (!mergedFiles.find((f: any) => f.name === newFile.name)) {
-                        mergedFiles.push(newFile)
-                    }
-                })
-            json.files = mergedFiles;
-        } catch (parseError) {
-            console.error('Failed to parse JSON string:', jsonStr)
-            console.error('Raw Text that failed:', text)
-            throw new Error('AI produced invalid JSON formatting. This usually happens when generating exceptionally large architecture strings. Please try again.')
-        }
-
-        return c.json(json)
+        return streamText(c, async (stream) => {
+            for await (const chunk of genStream) {
+                await stream.write(chunk.text());
+            }
+        })
     } catch (error: any) {
         console.error('Error during refinement:', error)
         return c.json({ error: error.message }, 500)
