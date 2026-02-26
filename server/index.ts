@@ -25,9 +25,10 @@ function getGenerativeModel() {
     const key = keys[currentKeyIndex];
     const genAI = new GoogleGenerativeAI(key);
     return genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash-8b',
+        model: 'gemini-1.5-flash',
         generationConfig: {
-            responseMimeType: 'application/json'
+            responseMimeType: 'application/json',
+            maxOutputTokens: 2500
         }
     });
 }
@@ -90,7 +91,7 @@ app.post('/analyze', async (c) => {
         const prompt = `You are an elite Senior UI/UX Developer and System Architect. Look at the provided image to extract its dominant color palette, mood, and aesthetic.
 ${userPrompt ? `The user also specifically requested: "${userPrompt}"` : 'Construct a responsive landing page based on this aesthetic.'}
 
-Generate a complete front-end architecture targeting this visual identity. IMPORTANT: Keep the HTML structure extremely concise, elegant, and modular to ensure fast generation times under 30 seconds. Do not generate thousands of lines. Provide a beautiful but highly optimized single-page layout. You must write everything in pure HTML format. Ensure the design is PERFECTLY RESPONSIVE for both mobile and desktop views using Tailwind classes. If you need reactivity, use Vue 3 via script tags (e.g., <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>). Use Tailwind CSS for all styling (e.g., <script src="https://cdn.tailwindcss.com"></script>). Ensure all icons use inline SVG or a CDN (like FontAwesome or Phosphor). Ensure ALL interactive elements (tabs, modals, menus, toggles) default to a CLOSED/HIDDEN state and have fully working toggle/dismiss Vue logic so they can be closed by users.
+Generate a complete front-end architecture targeting this visual identity. IMPORTANT: Keep the HTML structure EXTREMELY CONCISE (UNDER 150 LINES TOTAL) to ensure generation time is under 15 seconds. DO NOT EXCEED 150 LINES OF HTML. YOU MUST KEEP IT EXTREMELY SIMPLE AND SHORT AND FAST. Provide a beautiful but highly optimized single-page layout. You must write everything in pure HTML format. Ensure the design is PERFECTLY RESPONSIVE for both mobile and desktop views using Tailwind classes. If you need reactivity, use Vue 3 via script tags (e.g., <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>). Use Tailwind CSS for all styling (e.g., <script src="https://cdn.tailwindcss.com"></script>). Ensure all icons use inline SVG or a CDN (like FontAwesome or Phosphor). Ensure ALL interactive elements (tabs, modals, menus, toggles) default to a CLOSED/HIDDEN state and have fully working toggle/dismiss Vue logic so they can be closed by users.
 IMPORTANT: The user has a frontend "Live Edit" tool that allows them to swap images purely via DOM \`src\` attributes. Therefore, if you build image galleries or modals that display images, DO NOT use a hardcoded state array to drive the modal image. INSTEAD, use JavaScript/Vue logic to extract the exact \`src\` attribute directly from the specific \`<img>\` element the user clicked, and pass that to the modal. This ensures the modal reflects any DOM image overrides.
 CRITICAL: DO NOT hide core text or elements using \`opacity: 0\` or scroll reveals without GUARANTEEING they become visible on load. If your Javascript IntersectionObserver fails, the user gets a completely blank site. Default to completely visible elements if you aren't 100% sure your reveal logic is bulletproof.
 CRITICAL STYLING RULE: You MUST include the Tailwind CDN script (\`<script src="https://cdn.tailwindcss.com"></script>\`) inside the \`<head>\` of your \`index.html\`. If you do not include this script, all of your Tailwind classes will fail to render, resulting in a blank, unstyled page.
