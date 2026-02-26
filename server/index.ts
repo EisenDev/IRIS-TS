@@ -2,10 +2,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import * as dotenv from 'dotenv'
 import { jsonrepair } from 'jsonrepair'
-
-dotenv.config()
 
 const app = new Hono().basePath('/api')
 
