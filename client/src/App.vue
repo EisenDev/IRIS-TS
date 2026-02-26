@@ -620,8 +620,19 @@ const generateUI = async () => {
         throw new Error(errData?.error || `Server error: ${response.statusText}`);
     }
     
-    const data = await response.json()
-    if (data.files) {
+    const text = await response.text();
+    let data;
+    try {
+        let cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const first = cleaned.indexOf('{');
+        const last = cleaned.lastIndexOf('}');
+        if (first !== -1 && last !== -1) cleaned = cleaned.substring(first, last + 1);
+        data = JSON.parse(cleaned);
+    } catch (e) {
+        throw new Error('AI produced invalid JSON architecture format.');
+    }
+    
+    if (data && data.files) {
       generatedFiles.value = data.files
       activeFileIndex.value = 0 // Auto-focus the first file (index.html)
       generationTheme.value = data.theme_name || 'Generated Theme'
@@ -667,8 +678,19 @@ const refineUI = async () => {
         throw new Error(errData?.error || `Server error: ${response.statusText}`);
     }
     
-    const data = await response.json()
-    if (data.files) {
+    const text = await response.text();
+    let data;
+    try {
+        let cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const first = cleaned.indexOf('{');
+        const last = cleaned.lastIndexOf('}');
+        if (first !== -1 && last !== -1) cleaned = cleaned.substring(first, last + 1);
+        data = JSON.parse(cleaned);
+    } catch (e) {
+        throw new Error('AI produced invalid JSON architecture format.');
+    }
+    
+    if (data && data.files) {
       // Intelligently merge files back in so we don't drop binary assets
       data.files.forEach((refinedFile: any) => {
           const index = generatedFiles.value.findIndex(f => f.name === refinedFile.name);

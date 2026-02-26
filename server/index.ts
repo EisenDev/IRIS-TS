@@ -1,6 +1,7 @@
 
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { streamText } from 'hono/streaming'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { jsonrepair } from 'jsonrepair'
 
@@ -39,8 +40,8 @@ async function generateWithRotation(requestContents: any) {
     while (attempts < keys.length) {
         try {
             const model = getGenerativeModel();
-            const result = await model.generateContent(requestContents);
-            return result;
+            const result = await model.generateContentStream(requestContents);
+            return result.stream;
         } catch (error: any) {
             const msg = error.message || '';
             const isRateLimit = error.status === 429 || msg.includes('429') || msg.includes('RetryInfo') || msg.includes('RATE_LIMIT');
@@ -60,7 +61,7 @@ async function generateWithRotation(requestContents: any) {
             }
         }
     }
-    throw new Error('All configured API keys are currently rate limited.');
+    throw new Error('All API keys have been rate limited. Please try again later.');
 }
 
 function safeJsonParse(jsonStr: string) {
@@ -114,41 +115,28 @@ Return a strictly valid JSON response containing EXACTLY this structure:
 
 DO NOT include markdown tags like \`\`\`json. Return ONLY the raw JSON string.`
 
-        // Handle base64 string that might include data URIs
-        const base64Data = image.replace(/^data:image\/(png|jpg|jpeg|webp);base64,/, '')
-        const mimeTypeMatch = image.match(/^data:(image\/\w+);base64,/)
-        const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/jpeg'
+        const requestContents: any[] = [{ text: prompt }];
 
-        const imageRef = {
-            inlineData: {
-                data: base64Data,
-                mimeType: mimeType
+        if (image) {
+            const base64Data = image.replace(/^data:image\/(png|jpg|jpeg|webp);base64,/, '')
+            const mimeTypeMatch = image.match(/^data:(image\/\w+);base64,/)
+            const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/jpeg'
+
+            requestContents.push({
+                inlineData: {
+                    data: base64Data,
+                    mimeType: mimeType
+                }
+            });
+        }
+
+        const genStream = await generateWithRotation(requestContents)
+
+        return streamText(c, async (stream) => {
+            for await (const chunk of genStream) {
+                await stream.write(chunk.text());
             }
-        }
-
-        const result = await generateWithRotation([prompt, imageRef])
-        let text = result.response.text()
-
-        // Clean up potential markdown formatting and grab only the JSON object
-        text = text.replace(/```json/gi, '').replace(/```/g, '').trim()
-
-        let jsonStr = text;
-        const firstBrace = text.indexOf('{');
-        const lastBrace = text.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
-            jsonStr = text.substring(firstBrace, lastBrace + 1);
-        }
-
-        let json
-        try {
-            json = safeJsonParse(jsonStr)
-        } catch (parseError) {
-            console.error('Failed to parse JSON:', text)
-            console.error('Extracted JSON String:', jsonStr)
-            throw new Error('AI produced invalid JSON formatting. This usually happens when generating exceptionally large architecture strings. Please try again.')
-        }
-
-        return c.json(json)
+        })
     } catch (error: any) {
         console.error('Error during analysis:', error)
         return c.json({ error: error.message }, 500)
