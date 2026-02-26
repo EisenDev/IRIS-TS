@@ -11,6 +11,9 @@ const app = new Hono().basePath('/api')
 
 app.use('/*', cors())
 
+app.get('/health', (c) => c.text('OK'))
+
+
 const apiKeys = Object.keys(process.env)
     .filter(k => k.startsWith('GEMINI_API_KEY') && !!process.env[k])
     .flatMap(k => (process.env[k] as string).split(',').map(s => s.trim()).filter(Boolean));
