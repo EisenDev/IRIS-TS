@@ -19,7 +19,9 @@ let currentKeyIndex = 0;
 function getApiKeys() {
     // Lazy evaluation for Vercel Edge runtime compatibility
     const keyEnv = process.env.GEMINI_API_KEY || '';
-    return keyEnv.split(',').map(s => s.trim()).filter(Boolean);
+    // Strip any accidental quotes injected by Vercel env parsing
+    const cleanKey = keyEnv.replace(/['"]/g, '');
+    return cleanKey.split(',').map((s: string) => s.trim()).filter(Boolean);
 }
 
 function getGenerativeModel() {
