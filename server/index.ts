@@ -11,21 +11,18 @@ app.use('/*', cors())
 app.get('/health', (c) => c.text('OK'))
 
 
-const apiKeys = Object.keys(process.env)
-    .filter(k => k.startsWith('GEMINI_API_KEY') && !!process.env[k])
-    .flatMap(k => (process.env[k] as string).split(',').map(s => s.trim()).filter(Boolean));
-
-if (apiKeys.length === 0) {
-    console.warn("⚠️ No GEMINI_API_KEY found in .env");
-} else {
-    console.log(`🔑 Loaded ${apiKeys.length} Gemini API Key(s) for rotation.`);
-}
-
 let currentKeyIndex = 0;
 
+function getApiKeys() {
+    // Lazy evaluation for Vercel Edge runtime compatibility
+    const keyEnv = process.env.GEMINI_API_KEY || '';
+    return keyEnv.split(',').map(s => s.trim()).filter(Boolean);
+}
+
 function getGenerativeModel() {
-    if (apiKeys.length === 0) throw new Error("No API Keys configured in .env");
-    const key = apiKeys[currentKeyIndex];
+    const keys = getApiKeys();
+    if (keys.length === 0) throw new Error("No API Keys configured in .env");
+    const key = keys[currentKeyIndex];
     const genAI = new GoogleGenerativeAI(key);
     return genAI.getGenerativeModel({
         model: 'gemini-2.5-flash',
@@ -36,11 +33,13 @@ function getGenerativeModel() {
 }
 
 async function generateWithRotation(requestContents: any) {
+    const keys = getApiKeys();
     let attempts = 0;
-    while (attempts < apiKeys.length) {
+    while (attempts < keys.length) {
         try {
             const model = getGenerativeModel();
-            return await model.generateContent(requestContents);
+            const result = await model.generateContent(requestContents);
+            return result;
         } catch (error: any) {
             const msg = error.message || '';
             const isRateLimit = error.status === 429 || msg.includes('429') || msg.includes('RetryInfo') || msg.includes('RATE_LIMIT');
@@ -48,11 +47,11 @@ async function generateWithRotation(requestContents: any) {
 
             if (isRateLimit || isInvalidKey) {
                 console.warn(`⚠️ API Key #${currentKeyIndex + 1} failed (${isRateLimit ? 'Rate Limited' : 'Invalid'}). Rotating...`);
-                if (apiKeys.length > 1) {
-                    currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
+                if (keys.length > 1) {
+                    currentKeyIndex = (currentKeyIndex + 1) % keys.length;
                 }
                 attempts++;
-                if (attempts === apiKeys.length) {
+                if (attempts === keys.length) {
                     throw new Error('All configured API keys are currently exhausted or invalid. Please check your .env keys or wait 10-60 seconds.');
                 }
             } else {

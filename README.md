@@ -1,36 +1,66 @@
-**IRIS-TS** (Atmosphere Engine) is an advanced, AI-driven architectural synthesizer that dynamically generates, refines, and deploys completely functioning, ultra-premium front-end web environments. 
+# IRIS-TS (Intelligent Rapid Interface Synthesizer - TypeScript)
+**Atmosphere Engine**
 
-By simply uploading an image (for visual identity) and providing structural prompts, IRIS-TS leverages the **Google Gemini Generative AI** to instantly write, assemble, and render production-ready HTML, Tailwind CSS, and Vue 3 logic—all within a live sandbox environment.
+## Overview
+IRIS-TS is an advanced, AI-driven architectural synthesizer designed to dynamically generate, refine, and deploy completely functioning, ultra-premium front-end web environments. 
 
----
+By leveraging the cutting-edge reasoning capabilities of Google's Gemini Flash AI model, IRIS-TS can examine unstructured visual input (like generic screenshots, sketches, or reference images) and synthesize pixel-perfect, fully responsive Vue 3 + Tailwind CSS applications within seconds. 
 
-### ⚡ Key Features
-
-- **🧠 Auto-Synthesizing Architecture**: Upload an image or provide a strict UI/UX prompt. The Atmosphere Engine parses the aesthetic (colors, mood, styling) and generates a perfectly responsive, single-page application targeting that identity.
-- **🔄 Sovereign Refinement Engine**: Don't like a specific section? Chat with the AI. Provide iterative prompts (e.g., *"Change the hero section to an image carousel"* or *"Make the typography brutalist"*) and IRIS-TS will surgically update the live DOM without rewriting the entire application.
-- **🛠️ Interactive Live-Edit Mode**: Visually manipulate the generated output. Click directly on rendered images to trigger native file uploads and swap assets on the fly. The underlying code automatically updates to reflect your DOM changes.
-- **🚀 One-Click Vercel Deployment**: Bring Your Own Key (BYOK). Enter your Vercel API token to instantaneously push your generated architecture to a live, public, static production URL globally. 
-- **📦 ZIP Export**: Instantly package your generated `index.html`, `tailwind.config.js`, and all localized `assets/` into a downloadable `.zip` file for offline hosting or custom backend integration.
-- **🛡️ Self-Healing JSON Parser**: Features an aggressive backend auto-heal mechanism that parses, scrubs, and fixes unescaped characters from massive AI code blocks to prevent syntax crashes.
+It completely removes the traditional prototyping phase, letting developers construct, converse with, and interactively live-edit an AI-generated interface as if it were a native IDE plugin. 
 
 ---
 
-### 🏗️ Technology Stack
+## 🚀 Key Features
 
-- **Frontend Application**: Vue 3 (Composition API), Vite, JSZip, Tailwind CSS 
-- **Backend API Layer**: Hono.js (TypeScript), Node.js, Vercel API
-- **AI Engine**: `@google/generative-ai` (Gemini Foundation Models) with built-in Rate Limit & API Key Rotation logic.
+### 1. Visual Intake (Live Lens & Data Upload)
+Instead of relying purely on text prompts, IRIS-TS accepts visual inspiration. Simply capture a screenshot using your webcam or upload a reference image. The AI engine extracts the mood, design layout, color hexes, and structure natively, mapping them to a custom `tailwind.config.js`.
+
+### 2. Live Edit DOM Manipulation
+IRIS-TS renders the AI-generated code directly natively inside an isolated `<iframe>`. You can instantly:
+*   **Click-to-Edit Text:** Click any headline or paragraph to rewrite the copy natively without coding.
+*   **Click-to-Swap Images:** Click any placeholder image to securely upload and inject your own local file assets natively into the HTML DOM.
+
+### 3. Conversational Refinement
+Not perfectly happy with the initial build? Use the **Structural Prompt** sidebar to talk to your codebase directly. Tell IRIS-TS to *"Convert the hero layout to a dark mode bento box"* or *"Add a pricing table section"*. The AI surgically alters the specific HTML and CSS nodes without losing your unsaved text or image edits.
+
+### 4. Zero-Config Cloud Deployments
+With native Vercel CLI integration, IRIS-TS apps can be published directly to the public internet edge in one click. Supply a BYOK (Bring Your Own Key) Vercel Token and your custom domain name, and the synthesizer compiles your architecture and pushes it live instantly.
+
+### 5. Architectural Auto-Healing
+Because Large Language Models (LLMs) occasionally drop commas or forget to properly escape raw newlines when generating large code structures, IRIS-TS sits behind a highly robust parsing layer (using `jsonrepair`). It natively sweeps and cleans malformed AI payloads, converting broken generation strings into fully working UI files silently in the background.
 
 ---
 
-### 🚀 Local Development Setup
+## 🛠 Tech Stack
+*   **Frontend Client:** Vue 3 (Composition API), Vite, Tailwind CSS
+*   **Backend Server:** Node.js, Hono, Vercel Edge Serverless Functions
+*   **AI Engine:** Google Generative AI (Gemini Flash Models)
+*   **Deployment:** Vercel SDK
 
-#### 1. Requirements
-- Node.js (v18+ recommended)
-- A Google Gemini API Key
-- A Vercel API Token (optional, for deployment features)
+## ⚙️ Local Development Setup
 
-#### 2. Clone the Repository
+### 1. Setup Environment Variables
+At the root of the `./server/` directory, create a `.env` file containing your comma-separated Gemini API Keys (to allow automatic rate limit rotation!).
+
+```env
+GEMINI_API_KEY=key_1, key_2, key_3
+```
+
+### 2. Install Dependencies
+Run the installation script at the root of the codebase to build both the frontend and backend:
 ```bash
-git clone https://github.com/EisenDev/IRIS-TS.git
-cd IRIS-TS
+npm install && cd client && npm install
+```
+
+### 3. Start Local Engine
+From the `./client` directory:
+```bash
+npm run dev
+```
+
+From the `./server` directory:
+```bash
+npm run dev
+```
+
+The system relies on local dynamic proxying, which natively shuttles requests from `http://localhost:5173/api` over to the Hono instance on `http://127.0.0.1:3000`.
