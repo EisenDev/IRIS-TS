@@ -1,4 +1,4 @@
-import { serve } from '@hono/node-server'
+
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { GoogleGenerativeAI } from '@google/generative-ai'
@@ -300,15 +300,5 @@ app.post('/deploy', async (c) => {
         return c.json({ error: error.message }, 500)
     }
 })
-
-const port = 3000
-
-if (!process.env.VERCEL) {
-    console.log(`Server is running on http://localhost:${port}`)
-    serve({
-        fetch: app.fetch,
-        port
-    })
-}
 
 export default app;
