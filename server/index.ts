@@ -17,57 +17,50 @@ app.get('/health', (c) => {
 })
 
 
-let currentKeyIndex = 0;
-
-function getApiKeys() {
-    // Lazy evaluation for Vercel Edge runtime compatibility
-    const keyEnv = process.env.GEMINI_API_KEY || '';
+function getApiKeys(c?: any) {
+    // Try c.env first (Edge), then process.env (Node)
+    const keyEnv = (c?.env?.GEMINI_API_KEY) || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '') || '';
     // Strip any accidental quotes injected by Vercel env parsing
-    const cleanKey = keyEnv.replace(/['"]/g, '');
+    const cleanKey = keyEnv.replace(/['"]/g, '').trim();
+    if (!cleanKey) return [];
     return cleanKey.split(',').map((s: string) => s.trim()).filter(Boolean);
 }
 
-function getGenerativeModel() {
-    const keys = getApiKeys();
-    if (keys.length === 0) throw new Error("No API Keys configured in .env");
-    const key = keys[currentKeyIndex];
-    const genAI = new GoogleGenerativeAI(key);
-    return genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
-        generationConfig: {
-            responseMimeType: 'application/json'
-        }
-    });
-}
+async function generateWithRotation(requestContents: any, c?: any) {
+    const keys = getApiKeys(c);
+    if (keys.length === 0) throw new Error("No API Keys configured. Please set GEMINI_API_KEY environment variable.");
 
-async function generateWithRotation(requestContents: any) {
-    const keys = getApiKeys();
-    let attempts = 0;
-    while (attempts < keys.length) {
+    // Shuffle keys for better distribution across serverless instances
+    const shuffledKeys = [...keys].sort(() => Math.random() - 0.5);
+    let lastError: any = null;
+
+    for (let i = 0; i < shuffledKeys.length; i++) {
+        const key = shuffledKeys[i];
         try {
-            const model = getGenerativeModel();
+            const genAI = new GoogleGenerativeAI(key);
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-2.5-flash',
+                generationConfig: {
+                    responseMimeType: 'application/json'
+                }
+            });
             const result = await model.generateContentStream(requestContents);
             return result.stream;
         } catch (error: any) {
+            lastError = error;
             const msg = error.message || '';
             const isRateLimit = error.status === 429 || msg.includes('429') || msg.includes('RetryInfo') || msg.includes('RATE_LIMIT');
             const isInvalidKey = error.status === 400 || msg.includes('API_KEY_INVALID') || msg.includes('not valid');
 
             if (isRateLimit || isInvalidKey) {
-                console.warn(`⚠️ API Key #${currentKeyIndex + 1} failed (${isRateLimit ? 'Rate Limited' : 'Invalid'}). Rotating...`);
-                if (keys.length > 1) {
-                    currentKeyIndex = (currentKeyIndex + 1) % keys.length;
-                }
-                attempts++;
-                if (attempts === keys.length) {
-                    throw new Error('All configured API keys are currently exhausted or invalid. Please check your .env keys or wait 10-60 seconds.');
-                }
+                console.warn(`⚠️ API Key failed (${isRateLimit ? 'Rate Limited' : 'Invalid'}). Trying next key... (${i + 1}/${shuffledKeys.length})`);
+                continue;
             } else {
-                throw error; // Not a rate limit, throw actual error
+                throw error; // Not a rate limit or invalid key, throw immediately
             }
         }
     }
-    throw new Error('All API keys have been rate limited. Please try again later.');
+    throw new Error(`Exhausted all ${keys.length} API keys. Last attempt error: ${lastError?.message || 'Unknown'}`);
 }
 
 function safeJsonParse(jsonStr: string) {
@@ -136,7 +129,7 @@ DO NOT include markdown tags like \`\`\`json. Return ONLY the raw JSON string.`
             });
         }
 
-        const genStream = await generateWithRotation(requestContents)
+        const genStream = await generateWithRotation(requestContents, c)
 
         return streamText(c, async (stream) => {
             // Write a tiny bit of data immediately to keep the Vercel connection alive
@@ -207,7 +200,7 @@ Return ONLY the strictly valid JSON response containing EXACTLY the same structu
             });
         }
 
-        const genStream = await generateWithRotation(requestContents)
+        const genStream = await generateWithRotation(requestContents, c)
 
         return streamText(c, async (stream) => {
             // Write a tiny bit of data immediately to keep the Vercel connection alive

@@ -615,12 +615,19 @@ const generateUI = async () => {
         userPrompt: userPrompt.value 
       })
     })
+    const text = await response.text();
+
     if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        throw new Error(errData?.error || `Server error: ${response.statusText}`);
+        let errMsg = `Server error: ${response.status}`;
+        try {
+            const errData = JSON.parse(text);
+            if (errData.error) errMsg = errData.error;
+        } catch(e) {
+            errMsg += ` - ${text.substring(0, 100)}`;
+        }
+        throw new Error(errMsg);
     }
     
-    const text = await response.text();
     let data;
     try {
         let cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
@@ -629,6 +636,7 @@ const generateUI = async () => {
         if (first !== -1 && last !== -1) cleaned = cleaned.substring(first, last + 1);
         data = JSON.parse(cleaned);
     } catch (e) {
+        console.error('Payload:', text);
         throw new Error('AI produced invalid JSON architecture format.');
     }
     
@@ -673,12 +681,19 @@ const refineUI = async () => {
         images: refinementImages.value
       })
     })
+    const text = await response.text();
+
     if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        throw new Error(errData?.error || `Server error: ${response.statusText}`);
+        let errMsg = `Server error: ${response.status}`;
+        try {
+            const errData = JSON.parse(text);
+            if (errData.error) errMsg = errData.error;
+        } catch(e) {
+            errMsg += ` - ${text.substring(0, 100)}`;
+        }
+        throw new Error(errMsg);
     }
     
-    const text = await response.text();
     let data;
     try {
         let cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
@@ -687,6 +702,7 @@ const refineUI = async () => {
         if (first !== -1 && last !== -1) cleaned = cleaned.substring(first, last + 1);
         data = JSON.parse(cleaned);
     } catch (e) {
+        console.error('Payload:', text);
         throw new Error('AI produced invalid JSON architecture format.');
     }
     
