@@ -96,23 +96,9 @@ IMPORTANT: The user has a frontend "Live Edit" tool that allows them to swap ima
 CRITICAL: DO NOT hide core text or elements using \`opacity: 0\` or scroll reveals without GUARANTEEING they become visible on load. If your Javascript IntersectionObserver fails, the user gets a completely blank site. Default to completely visible elements if you aren't 100% sure your reveal logic is bulletproof.
 CRITICAL STYLING RULE: You MUST include the Tailwind CDN script (\`<script src="https://cdn.tailwindcss.com"></script>\`) inside the \`<head>\` of your \`index.html\`. If you do not include this script, all of your Tailwind classes will fail to render, resulting in a blank, unstyled page.
 
-Return a strictly valid JSON response containing EXACTLY this structure:
-{
-  "theme_name": "string",
-  "colors": ["string", "string"],
-  "files": [
-    {
-      "name": "index.html",
-      "content": "string (the complete, fully functional HTML page including Vue logic inside <script> tags, CDNs, and all styling)"
-    },
-    {
-      "name": "tailwind.config.js",
-      "content": "string (a tailwind config JS file that defines the extracted colors and any extended utilities)"
-    }
-  ]
-}
-
-DO NOT include markdown tags like \`\`\`json. Return ONLY the raw JSON string.`
+OUTPUT FORMAT REQUIREMENTS:
+You must provide a JSON output. The format is an object with "theme_name", "colors" (hex array), and "files" (array of { name, content }).
+Return ONLY the strictly valid JSON response containing EXACTLY the same structure. DO NOT include markdown tags like \`\`\`json. Return ONLY the raw JSON string.`
 
         const requestContents: any[] = [{ text: prompt }];
 
@@ -129,29 +115,28 @@ DO NOT include markdown tags like \`\`\`json. Return ONLY the raw JSON string.`
             });
         }
 
-        const genStream = await generateWithRotation(requestContents, c)
-
         return streamText(c, async (stream) => {
-            // Write a tiny bit of data immediately to keep the Vercel connection alive
+            // CRITICAL: Write a tiny bit of data immediately to keep the Vercel connection alive
             await stream.write(' ');
 
             try {
+                const genStream = await generateWithRotation(requestContents, c)
                 for await (const chunk of genStream) {
                     try {
                         const parts = chunk.candidates?.[0]?.content?.parts || [];
                         const text = parts.map(p => p.text).join('') || chunk.text();
                         if (text) await stream.write(text);
                     } catch (e) {
-                        console.warn('Chunk process failed', e);
+                        console.warn('Chunk processing failure:', e);
                     }
                 }
             } catch (err: any) {
-                console.error('Stream iteration failed:', err);
-                await stream.write(`\n\n{"error": "AI Synthesis interrupted: ${err.message || 'Stream connection lost'}"}`);
+                console.error('Stream iteration aborted:', err);
+                await stream.write(`\n\n{"error": "AI Engine failure: ${err.message || 'The AI service is temporarily unavailable.'}"}`);
             }
         })
     } catch (error: any) {
-        console.error('Error during analysis:', error)
+        console.error('Initial Error during analysis:', error)
         return c.json({ error: error.message }, 500)
     }
 })
@@ -200,24 +185,23 @@ Return ONLY the strictly valid JSON response containing EXACTLY the same structu
             });
         }
 
-        const genStream = await generateWithRotation(requestContents, c)
-
         return streamText(c, async (stream) => {
-            // Write a tiny bit of data immediately to keep the Vercel connection alive
+            // CRITICAL: Write a tiny bit of data immediately to keep the Vercel connection alive
             await stream.write(' ');
 
             try {
+                const genStream = await generateWithRotation(requestContents, c)
                 for await (const chunk of genStream) {
                     try {
                         const parts = chunk.candidates?.[0]?.content?.parts || [];
                         const text = parts.map(p => p.text).join('') || chunk.text();
                         if (text) await stream.write(text);
                     } catch (e) {
-                        console.warn('Chunk process failed', e);
+                        console.warn('Chunk processing failure:', e);
                     }
                 }
             } catch (err: any) {
-                console.error('Stream iteration failed:', err);
+                console.error('Stream iteration aborted:', err);
                 await stream.write(`\n\n{"error": "AI Refinement interrupted: ${err.message || 'Stream connection lost'}"}`);
             }
         })
