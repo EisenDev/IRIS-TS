@@ -83,7 +83,7 @@
                     <!-- Inner Grid Layout -->
                     <div class="grid grid-cols-12 gap-4 w-full h-full p-8 pt-12">
                         <!-- Sidebar -->
-                        <div class="col-span-3 flex flex-col h-full gap-4">
+                        <div class="col-span-4 flex flex-col h-full gap-4">
                             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Project Assets</div>
                             
                             <div class="h-28 w-full rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center group/upload cursor-pointer hover:bg-indigo-500/20 transition-colors">
@@ -92,67 +92,60 @@
                             </div>
 
                             <div class="flex-1 w-full rounded-xl bg-white/5 border border-white/5 p-3 flex flex-col gap-2 overflow-y-auto">
-                                <div class="text-[10px] text-slate-500 font-mono">Elements Identified</div>
-                                <div class="w-full py-1.5 px-2 rounded bg-white/5 border border-white/10 text-[10px] text-slate-300 flex items-center gap-2"><svg class="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg> Header Nav</div>
-                                <div class="w-full py-1.5 px-2 rounded bg-white/5 border border-white/10 text-[10px] text-slate-300 flex items-center gap-2"><svg class="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> Hero Banner</div>
-                                <div class="w-full py-1.5 px-2 rounded bg-white/5 border border-white/10 text-[10px] text-slate-300 flex items-center gap-2"><svg class="w-3 h-3 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Features Section</div>
-                                <div class="w-full py-1.5 px-2 rounded bg-white/5 border border-white/10 text-[10px] text-slate-300 flex items-center gap-2 opacity-50"><svg class="w-3 h-3 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg> Call to Action</div>
+                                <div class="text-[10px] text-slate-500 font-mono">Structural Prompt</div>
+                                <div class="w-full py-2 px-3 rounded-lg bg-black/40 border border-emerald-500/30 text-[9px] text-slate-300 leading-relaxed font-mono shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
+                                    Make a portfolio using this image.<br/><br/>Also if you add image make it real image and not null.
+                                </div>
                             </div>
                             
-                            <div class="h-10 w-full rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-[11px] font-bold text-white shadow-[0_0_15px_rgba(79,70,229,0.4)] cursor-pointer hover:opacity-90 transition-opacity">
-                                Generate Component
+                            <div class="h-10 w-full rounded-xl bg-indigo-600/50 border border-indigo-500/50 flex items-center justify-center text-[11px] font-bold text-white/50 cursor-not-allowed transition-opacity gap-2">
+                                <svg class="animate-spin w-3 h-3 text-indigo-300" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                Synthesizing Frontend...
                             </div>
                         </div>
 
                         <!-- Main Canvas -->
-                        <div class="col-span-9 flex flex-col gap-4 h-full">
+                        <div class="col-span-8 flex flex-col gap-4 h-full">
                             <div class="h-10 w-full rounded-xl bg-black/40 border border-white/10 flex items-center px-4 gap-3">
                                 <div class="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
                                 <div class="text-[10px] text-slate-300 font-mono tracking-wide flex-1">Synthesizing modern landing page variant...</div>
                                 <div class="text-[9px] text-indigo-300 font-mono border border-indigo-500/30 px-2 py-0.5 rounded bg-indigo-500/10 hidden sm:block">Vue 3 + Tailwind</div>
                             </div>
                             
-                            <div class="flex-1 w-full rounded-xl bg-[#030712] border border-white/10 shadow-inner relative overflow-hidden flex flex-col">
+                            <div class="flex-1 w-full rounded-xl bg-white border border-white/10 shadow-inner relative overflow-hidden flex flex-col">
                                 <!-- Generated Preview Mockup -->
-                                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#030712] to-[#030712]"></div>
+                                <div class="absolute inset-0 bg-white"></div>
                                 
                                 <div class="relative z-10 w-full h-full p-6 flex flex-col">
                                     <!-- Mock Nav -->
                                     <div class="flex justify-between items-center mb-6">
-                                        <div class="text-white font-bold text-xs tracking-tight flex items-center gap-2">
-                                            <div class="w-4 h-4 rounded bg-gradient-to-br from-indigo-500 to-cyan-400"></div>
-                                            IRIS<span class="text-indigo-400">-TS</span>
+                                        <div class="text-[#008ECC] font-bold text-xs tracking-tight flex items-center gap-2">
+                                            EisenDev
                                         </div>
                                         <div class="flex gap-4 items-center">
-                                            <div class="text-[8px] text-slate-400 hover:text-white cursor-pointer transition-colors">Vision</div>
-                                            <div class="text-[8px] text-slate-400 hover:text-white cursor-pointer transition-colors">Features</div>
-                                            <div class="text-[8px] bg-white text-black px-3 py-1 rounded-full font-bold cursor-pointer">Start</div>
+                                            <div class="w-4 h-0.5 bg-slate-300 rounded"></div>
+                                            <div class="w-4 h-0.5 bg-slate-300 rounded mb-1"></div>
+                                            <div class="w-4 h-0.5 bg-slate-300 rounded mb-2 absolute"></div>
                                         </div>
                                     </div>
                                     
                                     <!-- Mock Hero Content -->
-                                    <div class="flex-1 flex items-center gap-6 mt-[-1rem]">
-                                        <div class="w-1/2 space-y-4">
-                                            <div class="inline-block px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[7px] text-indigo-300 font-bold uppercase tracking-widest backdrop-blur-sm">System Update 2.0</div>
-                                            <div class="text-2xl font-black text-white leading-tight">Build the <span class="bg-gradient-to-r from-indigo-400 to-cyan-400 text-transparent bg-clip-text">Future</span><br/>of Data.</div>
-                                            <div class="text-[9px] text-slate-400 leading-relaxed max-w-[90%] font-medium">Accelerate your workflow with AI-driven insights and real-time frontend synthesis.</div>
-                                            <div class="flex gap-2">
-                                                <div class="h-6 w-24 rounded-md bg-white text-black text-[9px] font-bold flex items-center justify-center cursor-pointer">Launch Engine</div>
-                                            </div>
+                                    <div class="flex-1 flex flex-col items-center gap-4 text-center mt-2">
+                                        <div class="text-3xl font-black text-slate-800 leading-tight">
+                                            <span class="text-slate-800">EisenDev</span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-500 font-medium">
+                                            IT Specialist focused on <span class="text-[#008ECC] font-bold">HTML & CSS.</span>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div class="px-4 py-2 bg-[#2678AA] text-white text-[9px] font-bold rounded shadow-md">View My Work</div>
                                         </div>
                                         
-                                        <!-- Image Mock -->
-                                        <div class="w-1/2 relative h-[140px] flex items-center justify-center">
-                                            <div class="absolute inset-0 bg-gradient-to-tr from-indigo-500/30 to-fuchsia-500/30 rounded-xl blur-md"></div>
-                                            <div class="relative w-full h-full rounded-lg border border-white/10 overflow-hidden bg-slate-800 flex flex-col shadow-2xl">
-                                                <div class="h-4 bg-black/40 border-b border-white/10 flex items-center px-2 gap-1.5">
-                                                    <div class="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
-                                                    <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                                                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                                                </div>
-                                                <div class="flex-1 p-0 m-0">
-                                                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" alt="Dashboard" class="w-full h-full object-cover opacity-90 grayscale-[20%]" />
-                                                </div>
+                                        <!-- About Section Preview -->
+                                        <div class="w-full mt-6 bg-white pt-4 border-t border-slate-100 flex flex-col items-center">
+                                            <div class="text-lg font-bold text-[#2678AA] mb-2">About Me</div>
+                                            <div class="text-[8px] text-slate-600 leading-relaxed max-w-[80%] text-center">
+                                                Hello! I'm EisenDev, an Information Technology Specialist with a passion for crafting engaging and responsive web experiences. My expertise lies in front-end development, specifically with a strong foundation in HTML and CSS.
                                             </div>
                                         </div>
                                     </div>
