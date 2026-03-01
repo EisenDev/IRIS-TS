@@ -121,7 +121,7 @@
                                     <div class="flex justify-between items-center mb-6">
                                         <div class="text-white font-bold text-xs tracking-tight flex items-center gap-2">
                                             <div class="w-4 h-4 rounded bg-gradient-to-br from-indigo-500 to-cyan-400"></div>
-                                            KAIROS<span class="text-indigo-400">.ai</span>
+                                            IRIS<span class="text-indigo-400">-TS</span>
                                         </div>
                                         <div class="flex gap-4 items-center">
                                             <div class="text-[8px] text-slate-400 hover:text-white cursor-pointer transition-colors">Vision</div>
