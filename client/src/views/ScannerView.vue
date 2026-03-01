@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen w-full flex bg-[#030712] text-slate-200 font-sans overflow-hidden selection:bg-indigo-500/30">
+  <div class="min-h-screen w-full flex bg-[#030712] text-slate-200 font-sans overflow-hidden selection:bg-indigo-500/30">
     <!-- Non-destructive inputs required persistently -->
     <input type="file" ref="assetUploadRef" @change="handleAssetUpload" accept="image/*,video/*" class="hidden" />
     <input type="file" ref="refinementInputRef" @change="handleRefinementUpload" accept="image/*" class="hidden" />

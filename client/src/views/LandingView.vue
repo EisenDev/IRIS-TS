@@ -1,5 +1,7 @@
 <template>
-  <LandingPage @enter="handleEnter" />
+  <div class="min-h-screen">
+    <LandingPage @enter="handleEnter" />
+  </div>
 </template>
 
 <script setup lang="ts">
